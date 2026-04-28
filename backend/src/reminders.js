@@ -9,6 +9,7 @@ import { REMINDER_HOUR, REMINDER_TZ, VAPID_PUBLIC, VAPID_PRIVATE } from "./confi
 import { asEvent, splitCsv } from "./helpers.js";
 import { CITIES } from "../cities.js";
 import { buildCityTag } from "../../shared/pushTags.js";
+import { pruneStalePushTokens } from "./push.js";
 
 const CITY_NAME = new Map(CITIES.map((c) => [c.slug, c.name]));
 const cityLabel = (slug) => CITY_NAME.get(slug) ?? slug;
@@ -147,11 +148,7 @@ export async function sendTomorrowReminders() {
         if (e && (e.statusCode === 404 || e.statusCode === 410)) stale.push(s.token);
       }
     }));
-    if (stale.length > 0) {
-      const del = db.prepare("DELETE FROM push_sub WHERE token = ?");
-      const tx = db.transaction((arr) => { for (const t of arr) del.run(t); });
-      tx(stale);
-    }
+    pruneStalePushTokens(stale);
 
     db.prepare(`
       INSERT OR REPLACE INTO reminder_sent (day, city, events, sent)

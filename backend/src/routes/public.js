@@ -4,6 +4,7 @@
 import webpush from "web-push";
 import { db } from "../db.js";
 import { VAPID_PUBLIC, VAPID_PRIVATE } from "../config.js";
+import { getSubsForTagExcludingUser, pruneStalePushTokens } from "../push.js";
 import {
   asArticle, asEvent, randomToken, safeId,
   profileShape, validOwnerId, validOpaqueToken, validDisplayName,
@@ -124,21 +125,9 @@ async function maybePushChatNotification(slug, authorName, body, authorOwnerId) 
 
   const tag = buildChatTag(slug);
   // Exclude the author's own devices — getting a push notification for a
-  // message you just sent yourself is annoying noise. Author identity =
-  // every push token that carries the `user:<ownerId>` tag.
+  // message you just sent yourself is annoying noise.
   const userTag = authorOwnerId ? buildUserTag(authorOwnerId) : null;
-  const subs = userTag
-    ? db.prepare(`
-        SELECT DISTINCT s.token, s.endpoint, s.p256dh, s.auth
-        FROM push_sub s JOIN push_tag t ON t.token = s.token
-        WHERE t.tag = ?
-          AND s.token NOT IN (SELECT token FROM push_tag WHERE tag = ?)
-      `).all(tag, userTag)
-    : db.prepare(`
-        SELECT DISTINCT s.token, s.endpoint, s.p256dh, s.auth
-        FROM push_sub s JOIN push_tag t ON t.token = s.token
-        WHERE t.tag = ?
-      `).all(tag);
+  const subs = getSubsForTagExcludingUser(tag, userTag);
   if (subs.length === 0) return;
 
   const channelLabel = slug === "global" ? "Globální · CZ" : (CITIES.find((c) => c.slug === slug)?.name ?? slug);
@@ -164,11 +153,7 @@ async function maybePushChatNotification(slug, authorName, body, authorOwnerId) 
       if (e && (e.statusCode === 404 || e.statusCode === 410)) stale.push(s.token);
     }
   }));
-  if (stale.length > 0) {
-    const del = db.prepare("DELETE FROM push_sub WHERE token = ?");
-    const tx = db.transaction((arr) => { for (const t of arr) del.run(t); });
-    tx(stale);
-  }
+  pruneStalePushTokens(stale);
 }
 
 // Normalise a display name for uniqueness: lowercase + strip diacritics.

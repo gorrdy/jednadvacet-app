@@ -13,6 +13,7 @@ import {
 } from "../auth.js";
 import { runIcsSync, runRssSync } from "../sync.js";
 import { previewTomorrowReminders, sendTomorrowReminders } from "../reminders.js";
+import { pruneStalePushTokens } from "../push.js";
 
 export function mountAdminRoutes(app) {
   // ── Login / session / me ───────────────────────────────────
@@ -154,11 +155,7 @@ export function mountAdminRoutes(app) {
         if (e && (e.statusCode === 404 || e.statusCode === 410)) stale.push(s.token);
       }
     }));
-    if (stale.length > 0) {
-      const del = db.prepare("DELETE FROM push_sub WHERE token = ?");
-      const tx = db.transaction((arr) => { for (const t of arr) del.run(t); });
-      tx(stale);
-    }
+    pruneStalePushTokens(stale);
 
     res.json({ matched, sent, failed });
   });
