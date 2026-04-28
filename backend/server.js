@@ -38,6 +38,7 @@ import { mountTierPublicRoutes } from "./src/routes/tier-public.js";
 import { mountTelemetryRoutes } from "./src/routes/telemetry.js";
 import { mountDmRoutes } from "./src/routes/dm.js";
 import { mountEventRoutes } from "./src/routes/events.js";
+import { mountChatRoutes } from "./src/routes/chat.js";
 
 if (VAPID_PUBLIC && VAPID_PRIVATE) {
   webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC, VAPID_PRIVATE);
@@ -78,6 +79,7 @@ mountTierPublicRoutes(app);
 mountTelemetryRoutes(app);
 mountDmRoutes(app);
 mountEventRoutes(app);
+mountChatRoutes(app);
 mountAdminRoutes(app);
 mountSuperadminRoutes(app);
 mountLnurlRoutes(app);
