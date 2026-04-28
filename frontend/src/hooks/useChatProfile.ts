@@ -1,6 +1,7 @@
 import { use, useCallback, useEffect, useState } from "react";
 import { evolu } from "../evolu";
 import { fetchChatProfile, saveChatProfile, type ChatProfile } from "../api";
+import { useAsync } from "./useAsync";
 import { redeemPendingReferral } from "../lib/tierSystem";
 
 /**
@@ -15,18 +16,12 @@ export function useChatProfile() {
   const owner = use(evolu.appOwner);
   const ownerId = owner.id as string;
 
+  // Initial fetch via useAsync; local state mirrors it so `save` can do an
+  // optimistic update without invalidating the hook cache.
+  const fetched = useAsync(() => fetchChatProfile(ownerId), [ownerId]);
   const [profile, setProfile] = useState<ChatProfile | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    let mounted = true;
-    fetchChatProfile(ownerId).then((p) => {
-      if (!mounted) return;
-      setProfile(p);
-      setLoading(false);
-    });
-    return () => { mounted = false; };
-  }, [ownerId]);
+  useEffect(() => { if (fetched.data !== undefined) setProfile(fetched.data); }, [fetched.data]);
+  const loading = fetched.loading;
 
   const save = useCallback(
     async (

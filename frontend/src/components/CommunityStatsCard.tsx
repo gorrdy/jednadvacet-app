@@ -3,22 +3,14 @@
 // with matched events). Aims to make the tier ladder feel populated:
 // "I'm tier 2 of N tiers, with X people above me" beats opaque progress.
 
-import { useEffect, useState, type FC } from "react";
-import { fetchCommunityStats, type CommunityStats } from "../api";
+import { type FC } from "react";
+import { fetchCommunityStats } from "../api";
 import { TIER_NAMES } from "../lib/tierSystem";
+import { useAsync } from "../hooks/useAsync";
 import { Avatar } from "./Avatar";
 
 export const CommunityStatsCard: FC = () => {
-  const [stats, setStats] = useState<CommunityStats | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    let cancelled = false;
-    fetchCommunityStats()
-      .then((s) => { if (!cancelled) setStats(s); })
-      .finally(() => { if (!cancelled) setLoading(false); });
-    return () => { cancelled = true; };
-  }, []);
+  const { data: stats, loading } = useAsync(() => fetchCommunityStats(), []);
 
   if (loading || !stats || stats.totalUsers === 0) return null;
 
