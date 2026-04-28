@@ -45,11 +45,11 @@ export const DIRECTORY_SECTIONS: DirectorySection[] = [
     title: "🚀 Začni tady",
     hint: "Nový v Bitcoinu? Tady je cesta.",
     tiles: [
-      { id: "what-is-btc", label: "Co je Bitcoin",  desc: "Stručný úvod + whitepaper",      icon: "₿", url: "https://jednadvacet.org/bitcoin/" },
-      { id: "self-custody",label: "Vlastní úschova", desc: "Peněženky + záloha fráze",       icon: "🔑", url: "https://jednadvacet.org/category/navody/" },
-      { id: "lightning",   label: "Lightning",       desc: "Rychlé platby, micropayments",   icon: "⚡", url: "https://jednadvacet.org/category/lightning-network/" },
-      { id: "cashu",       label: "Cashu / ecash",   desc: "Anonymní sats, chaum-style",     icon: "🕶", url: "https://cashu.space" },
-      { id: "privacy",     label: "Privacy",         desc: "Coinjoin, Tor, Samourai přístup", icon: "🛡", url: "https://bitcoinprivacy.guide/" },
+      { id: "what-is-btc", label: "Proč Bitcoin",    desc: "procbitcoin.cz — česky pro nováčky",          icon: "₿", url: "https://procbitcoin.cz" },
+      { id: "self-custody",label: "Vlastní úschova", desc: "Trezor: co znamená self-custody a proč",       icon: "🔑", url: "https://trezor.io/learn/basics/what-is-self-custody-and-why-is-it-important-for-your-crypto" },
+      { id: "lightning",   label: "Lightning",       desc: "Rychlé platby, micropayments",                 icon: "⚡", url: "https://lightning.network" },
+      { id: "cashu",       label: "Cashu / ecash",   desc: "Anonymní sats, chaum-style",                   icon: "🕶", url: "https://cashu.space" },
+      { id: "privacy",     label: "Privacy",         desc: "Bitcoiner.guide — coinjoin, Tor, návody",      icon: "🛡", url: "https://bitcoiner.guide/privacy/" },
     ],
   },
   {
