@@ -3811,13 +3811,11 @@ button.sidebar-group-head.clickable:hover {
   white-space: nowrap;
 }
 
-/* "+🙂" add-reaction button. Two flavours:
- *   • inline (default) — sits at the end of the chat-reactions row next
- *     to existing reaction chips.
- *   • .floating          — absolutely-positioned tag glued to the
- *     bottom-right of the message body, hover-revealed on desktop, faint
- *     on touch. Used when the message has no reactions yet, so we don't
- *     waste a whole row for it. */
+/* Inline "+🙂" sits at the end of the chat-reactions row next to
+ * existing chips. Adding the FIRST reaction now flows through the
+ * overflow ⋯ menu's "Reagovat" item — that keeps the message rows
+ * tight (no floating-button overhang) and gives touch users a single
+ * predictable action handle. */
 .reaction-add-btn {
   display: inline-flex;
   align-items: center;
@@ -3830,28 +3828,9 @@ button.sidebar-group-head.clickable:hover {
   line-height: 1.4;
   cursor: pointer;
   color: var(--ink-muted);
-  transition: color 0.12s, border-color 0.12s, background 0.12s, opacity 0.12s;
+  transition: color 0.12s, border-color 0.12s, background 0.12s;
 }
 .reaction-add-btn:hover { color: var(--ink); border-color: var(--ink-muted); background: var(--surface); }
-
-/* Floating variant — out of the flow so empty-reaction-row messages keep
-   their tight Discord-style spacing. */
-.chat-msg-body { position: relative; }
-.reaction-add-btn.floating {
-  position: absolute;
-  bottom: -0.55rem;
-  right: 0.25rem;
-  font-size: 0.72rem;
-  padding: 0.05rem 0.45rem;
-  opacity: 0;
-  z-index: 2;
-}
-.chat-msg:hover .reaction-add-btn.floating,
-.chat-msg:focus-within .reaction-add-btn.floating { opacity: 1; }
-@media (hover: none) {
-  /* Touch: no hover, so keep the floating button faintly visible. */
-  .reaction-add-btn.floating { opacity: 0.55; }
-}
 .chat-reactions {
   display: flex;
   flex-wrap: wrap;

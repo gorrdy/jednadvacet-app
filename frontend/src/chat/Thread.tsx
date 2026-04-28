@@ -247,11 +247,13 @@ export const Thread: FC<Props> = ({ slug, label, onBack, onAuthorRequest }) => {
         </div>
       );
     }
+    const canReact = !!ownerId && !!profile;
+    const showMenuBtn = canReact || mine;
     return (
       <div className="chat-bubble">
         {m.body}
         {m.editedAt && <span className="chat-edited-tag" title={`Upraveno ${formatRelative(m.editedAt)}`}>(upraveno)</span>}
-        {mine && (
+        {showMenuBtn && (
           <div className="chat-msg-actions" onClick={(e) => e.stopPropagation()}>
             <button
               type="button"
@@ -264,12 +266,21 @@ export const Thread: FC<Props> = ({ slug, label, onBack, onAuthorRequest }) => {
             </button>
             {menuFor === m.id && (
               <div className="chat-msg-menu" role="menu">
-                <button type="button" role="menuitem" className="chat-msg-menu-item" onClick={() => beginEdit(m)}>
-                  Upravit
-                </button>
-                <button type="button" role="menuitem" className="chat-msg-menu-item danger" onClick={() => { setMenuFor(null); void removeOwn(m); }}>
-                  Smazat
-                </button>
+                {canReact && (
+                  <button type="button" role="menuitem" className="chat-msg-menu-item" onClick={() => { setMenuFor(null); setPickingFor(m.id); }}>
+                    Reagovat
+                  </button>
+                )}
+                {mine && (
+                  <button type="button" role="menuitem" className="chat-msg-menu-item" onClick={() => beginEdit(m)}>
+                    Upravit
+                  </button>
+                )}
+                {mine && (
+                  <button type="button" role="menuitem" className="chat-msg-menu-item danger" onClick={() => { setMenuFor(null); void removeOwn(m); }}>
+                    Smazat
+                  </button>
+                )}
               </div>
             )}
           </div>
@@ -322,7 +333,7 @@ export const Thread: FC<Props> = ({ slug, label, onBack, onAuthorRequest }) => {
             const tier = authorProfile?.tier ?? 1;
             const hasReactions = (m.reactions?.length ?? 0) > 0;
             const showReactRow = hasReactions || pickingFor === m.id;
-            const canReact = !!ownerId && !!profile && editingFor !== m.id;
+            const canReactInline = !!ownerId && !!profile && editingFor !== m.id;
             return (
               <div
                 key={m.id}
@@ -351,17 +362,6 @@ export const Thread: FC<Props> = ({ slug, label, onBack, onAuthorRequest }) => {
                         <span className="chat-msg-time" title={formatRelative(m.createdAt)}>{formatTime(m.createdAt)}</span>
                       </div>
                       {renderBubble(m, mine)}
-                      {canReact && !showReactRow && (
-                        <button
-                          type="button"
-                          className="reaction-add-btn floating"
-                          onClick={(e) => { e.stopPropagation(); setPickingFor(m.id); }}
-                          aria-label="Přidat reakci"
-                          title="Přidat reakci"
-                        >
-                          🙂+
-                        </button>
-                      )}
                     </div>
                   </div>
                 ) : (
@@ -369,17 +369,6 @@ export const Thread: FC<Props> = ({ slug, label, onBack, onAuthorRequest }) => {
                     <span className="chat-msg-time-gutter" aria-hidden="true">{formatTime(m.createdAt)}</span>
                     <div className="chat-msg-body">
                       {renderBubble(m, mine)}
-                      {canReact && !showReactRow && (
-                        <button
-                          type="button"
-                          className="reaction-add-btn floating"
-                          onClick={(e) => { e.stopPropagation(); setPickingFor(m.id); }}
-                          aria-label="Přidat reakci"
-                          title="Přidat reakci"
-                        >
-                          🙂+
-                        </button>
-                      )}
                     </div>
                   </div>
                 )}
@@ -397,7 +386,7 @@ export const Thread: FC<Props> = ({ slug, label, onBack, onAuthorRequest }) => {
                         {r.emoji} <span className="count">{r.count}</span>
                       </button>
                     ))}
-                    {canReact && pickingFor !== m.id && (
+                    {canReactInline && pickingFor !== m.id && (
                       <button
                         type="button"
                         className="reaction-add-btn"
