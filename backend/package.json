@@ -1,0 +1,20 @@
+{
+  "name": "jednadvacet-backend",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "keys": "node generate-vapid.js",
+    "test": "BASE=${BASE:-http://127.0.0.1:3022} node --test test/"
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.10.0",
+    "express": "^5.1.0",
+    "fast-xml-parser": "^5.7.1",
+    "node-ical": "^0.26.0",
+    "web-push": "^3.6.7"
+  }
+}

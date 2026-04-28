@@ -1,0 +1,4 @@
+# GitHub Sponsors button at the top of the repo page.
+# `custom` accepts arbitrary URLs (including mailto:).
+custom:
+  - mailto:donate@jednadvacet.org

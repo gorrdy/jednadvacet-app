@@ -1,0 +1,19 @@
+[Unit]
+Description=Jednadvacet backend (API + Web Push)
+After=network.target
+
+[Service]
+Type=simple
+# Adapt User, WorkingDirectory, ExecStart to your install location.
+# Use `which node` to find the node binary; nvm users may want a hard-
+# coded absolute path to a specific Node version.
+User=ubuntu
+WorkingDirectory=/home/ubuntu/jednadvacet_app/backend
+ExecStart=/usr/bin/env node server.js
+Restart=on-failure
+RestartSec=5
+Environment=NODE_ENV=production
+EnvironmentFile=/home/ubuntu/jednadvacet_app/backend/.env
+
+[Install]
+WantedBy=multi-user.target

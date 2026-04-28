@@ -1,0 +1,20 @@
+{
+  "name": "Jednadvacet",
+  "short_name": "21",
+  "description": "Články, akce a meetupy pro komunitu Jednadvacet. Local-first, E2E šifrováno.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0d0b09",
+  "theme_color": "#ff8a2a",
+  "lang": "cs",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
