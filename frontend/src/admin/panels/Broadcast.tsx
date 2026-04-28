@@ -3,6 +3,7 @@ import { adminBroadcast, type BroadcastResult } from "../../api";
 import { CITIES } from "../../data/cities";
 import { CATEGORIES } from "../../data/categories";
 import { toggleInArray } from "../shared";
+import { buildCatTag, buildCityTag } from "../../../../shared/pushTags.js";
 
 export const BroadcastView: FC<{ token: string }> = ({ token }) => {
   const [title, setTitle] = useState("");
@@ -17,8 +18,8 @@ export const BroadcastView: FC<{ token: string }> = ({ token }) => {
   const send = async () => {
     if (!title.trim()) { setErr("Zadej titulek."); return; }
     const tags = [
-      ...cities.map((c) => `city:${c}`),
-      ...cats.map((c) => `cat:${c}`),
+      ...cities.map(buildCityTag),
+      ...cats.map(buildCatTag),
     ];
     if (tags.length === 0) {
       if (!window.confirm("Necháš prázdné tagy → notifikace dostane VŠICHNI. Pokračovat?")) return;

@@ -8,6 +8,7 @@ import { db } from "./db.js";
 import { REMINDER_HOUR, REMINDER_TZ, VAPID_PUBLIC, VAPID_PRIVATE } from "./config.js";
 import { asEvent, splitCsv } from "./helpers.js";
 import { CITIES } from "../cities.js";
+import { buildCityTag } from "../../shared/pushTags.js";
 
 const CITY_NAME = new Map(CITIES.map((c) => [c.slug, c.name]));
 const cityLabel = (slug) => CITY_NAME.get(slug) ?? slug;
@@ -106,7 +107,7 @@ export async function sendTomorrowReminders() {
       continue;
     }
 
-    const tag = `city:${city}`;
+    const tag = buildCityTag(city);
     const subs = db.prepare(`
       SELECT DISTINCT s.token, s.endpoint, s.p256dh, s.auth
       FROM push_sub s
@@ -219,7 +220,7 @@ export function previewTomorrowReminders() {
 
   const channels = [];
   for (const [city, evs] of byCity) {
-    const tag = `city:${city}`;
+    const tag = buildCityTag(city);
     const subs = db.prepare(`
       SELECT s.token, s.endpoint
       FROM push_sub s JOIN push_tag t ON t.token = s.token

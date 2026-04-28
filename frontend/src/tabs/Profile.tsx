@@ -8,6 +8,7 @@ import { use, useMemo, useState, type FC } from "react";
 import { evolu } from "../evolu";
 import { useUserPrefs } from "../hooks/usePrefs";
 import { LS } from "../lib/storageKeys";
+import { buildCatTag, buildChatTag, buildCityTag, buildUserTag } from "../../../shared/pushTags.js";
 import { usePush } from "../hooks/usePush";
 import { sendTestPush } from "../api";
 import { CitiesPanel } from "./settings/CitiesPanel";
@@ -56,16 +57,16 @@ export const Profile: FC = () => {
   };
 
   const tags = [
-    ...prefs.cities.map((c) => `city:${c}`),
-    ...prefs.categories.map((c) => `cat:${c}`),
+    ...prefs.cities.map(buildCityTag),
+    ...prefs.categories.map(buildCatTag),
     // Chat push channels: global is always included when chatPush is on;
     // per-city tags pile up per user preference. Broadcast-side uses
     // `chat:<slug>` join to send notifications only to opt-ins.
-    ...(chatPush ? ["chat:global", ...prefs.cities.map((c) => `chat:${c}`)] : []),
+    ...(chatPush ? [buildChatTag("global"), ...prefs.cities.map(buildChatTag)] : []),
     // Personal-notification tag: incoming Lightning Address payments,
     // future direct-message pushes, etc. Always-on when push is enabled —
     // the user implicitly opted in by enabling notifications at all.
-    `user:${ownerId}`,
+    buildUserTag(ownerId),
   ];
   const push = usePush(tags);
 

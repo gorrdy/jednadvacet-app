@@ -19,6 +19,7 @@
 import { db } from "../db.js";
 import { validOwnerId } from "../helpers.js";
 import { sendPushToTag } from "../push.js";
+import { buildUserTag } from "../../../shared/pushTags.js";
 
 const DEFAULT_MINT_URL = "https://cashu.cz";
 
@@ -40,7 +41,7 @@ async function markPaidAndNotify(row) {
     const body = row.comment
       ? `${sats} sats · ${String(row.comment).slice(0, 80)}`
       : `${sats} sats čekají v Peněžence`;
-    await sendPushToTag(`user:${row.owner_id}`, {
+    await sendPushToTag(buildUserTag(row.owner_id), {
       title: "⚡ Příchozí platba",
       body,
       url: "/#wallet",

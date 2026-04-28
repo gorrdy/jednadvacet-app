@@ -18,6 +18,7 @@ import {
   EVENT_CHAT_LOOKAHEAD_DAYS,
 } from "../../../shared/constants.js";
 import { dmSlugFor, parseDmSlug, parseEventSlug } from "../../../shared/slugs.js";
+import { buildChatTag, buildUserTag } from "../../../shared/pushTags.js";
 import { getCommunities } from "../communities.js";
 import {
   ensureUserTier,
@@ -121,11 +122,11 @@ async function maybePushChatNotification(slug, authorName, body, authorOwnerId) 
   if (now - last < PUSH_DEBOUNCE_MS) return;
   lastPushAt.set(slug, now);
 
-  const tag = `chat:${slug}`;
+  const tag = buildChatTag(slug);
   // Exclude the author's own devices — getting a push notification for a
   // message you just sent yourself is annoying noise. Author identity =
   // every push token that carries the `user:<ownerId>` tag.
-  const userTag = authorOwnerId ? `user:${authorOwnerId}` : null;
+  const userTag = authorOwnerId ? buildUserTag(authorOwnerId) : null;
   const subs = userTag
     ? db.prepare(`
         SELECT DISTINCT s.token, s.endpoint, s.p256dh, s.auth
