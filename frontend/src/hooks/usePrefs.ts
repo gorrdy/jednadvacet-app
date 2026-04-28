@@ -49,16 +49,20 @@ function serverPrefsFrom(row: Record<string, unknown> | null): UserPrefs {
 /**
  * Optimistic, debounced prefs hook.
  *
- * Prior bug: `toggleCity(praha)` immediately followed by `toggleCity(brno)`
- * both read `prefs.cities` from the *same* stale closure (React hadn't
- * re-rendered after the first save yet, and Evolu's write is async), so the
- * second click overwrote the first — only the latest city was saved.
+ * Local React state is the source of truth. Toggles use the functional
+ * setState form so each click reads the freshest value. Writes are
+ * flushed to Evolu on a 300 ms debounce so a rapid burst of chip-clicks
+ * becomes one merged write. Inbound sync from another device still
+ * lands — but only when we don't have a local edit queued, to avoid
+ * clobbering pending work.
  *
- * Fix: local React state is the source of truth. Toggles use the functional
- * setState form so each click reads the freshest value. Writes are flushed
- * to Evolu on a 300ms debounce so a rapid burst of chip-clicks becomes one
- * merged write. Inbound sync from another device still lands — but only
- * when we don't have a local edit queued, to avoid clobbering pending work.
+ * Identity stability matters: `writeToEvolu`, `scheduleFlush`,
+ * `toggleCity` etc. all need stable identities so a render triggered by
+ * a fresh Evolu sync can't churn the unmount-cleanup useEffect (which
+ * would call the OLD writeToEvolu — closing over a stale `row` — and
+ * potentially do a duplicate insert when the row was just freshly
+ * created upstream). We capture `row` in a ref so the writer always
+ * reads the latest value at flush time without re-creating the function.
  */
 export function useUserPrefs() {
   const rows = useQuery(userPrefsQuery);
@@ -73,10 +77,13 @@ export function useUserPrefs() {
   const [prefs, setPrefs] = useState<UserPrefs>(serverPrefs);
   const latestRef = useRef(prefs);
   latestRef.current = prefs;
+  const rowRef = useRef(row);
+  rowRef.current = row;
   const flushTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const writeToEvolu = useCallback(
     (next: UserPrefs) => {
+      const r = rowRef.current;
       const cities = toNES1000(stringifyCsv(next.cities));
       const categories = toNES1000(stringifyCsv(next.categories));
       const language = toNET100(next.language);
@@ -84,11 +91,11 @@ export function useUserPrefs() {
       const onbo = (next.onboardingDismissed ? 1 : 0) as SqliteBoolean;
       const near = (next.nearestDismissed ? 1 : 0) as SqliteBoolean;
 
-      if (row) {
+      if (r) {
         // null at runtime clears the optional field (TS types are branded
         // non-null strings, hence the cast).
         update("userPrefs", {
-          id: row.id,
+          id: r.id,
           cities: cities as unknown as NonEmptyString1000,
           categories: categories as unknown as NonEmptyString1000,
           ...(language ? { language } : {}),
@@ -108,7 +115,7 @@ export function useUserPrefs() {
         });
       }
     },
-    [row, insert, update],
+    [insert, update],
   );
 
   const scheduleFlush = useCallback(() => {
@@ -126,7 +133,10 @@ export function useUserPrefs() {
     setPrefs(serverPrefs);
   }, [serverPrefs]);
 
-  // Flush pending on unmount so we don't lose the last burst.
+  // Flush pending on unmount so we don't lose the last burst. Empty deps
+  // so this only runs on unmount — earlier we depended on writeToEvolu,
+  // which churned every time the row arrived from Evolu and could fire
+  // the cleanup mid-flow with a stale row reference.
   useEffect(() => {
     return () => {
       if (flushTimerRef.current) {
@@ -135,7 +145,8 @@ export function useUserPrefs() {
         writeToEvolu(latestRef.current);
       }
     };
-  }, [writeToEvolu]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const save = useCallback(
     (patch: Partial<UserPrefs>) => {
