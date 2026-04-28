@@ -55,6 +55,8 @@ export const LS = {
   NearestDismissed: "jednadvacet-nearest-dismissed",
   /** Cached browser geolocation result (lat/lng/ts JSON). Stays per-device. */
   NearestGeo: "jednadvacet-nearest-geo",
+  /** Per-section accordion open/closed state on the Home directory. */
+  DirectoryOpen: "jednadvacet-directory-open",
 
   // ── Admin ────────────────────────────────────────────────────────
   /** Admin login bearer; cleared on logout or 401. */

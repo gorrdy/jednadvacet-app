@@ -14,6 +14,7 @@ import {
   type DirectoryTile,
   type ScrollAnchor,
 } from "../data/directory";
+import { LS } from "../lib/storageKeys";
 
 interface GridProps {
   onNavigate: (t: DirectoryTab) => void;
@@ -26,11 +27,9 @@ const DEFAULT_OPEN: Record<string, boolean> = {
   tools: false,
 };
 
-const STORAGE_KEY = "jednadvacet-directory-open";
-
 function readOpenState(): Record<string, boolean> {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(LS.DirectoryOpen);
     if (!raw) return DEFAULT_OPEN;
     const parsed = JSON.parse(raw);
     return { ...DEFAULT_OPEN, ...parsed };
@@ -38,7 +37,7 @@ function readOpenState(): Record<string, boolean> {
 }
 
 function writeOpenState(s: Record<string, boolean>) {
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(s)); }
+  try { localStorage.setItem(LS.DirectoryOpen, JSON.stringify(s)); }
   catch { /* ignore */ }
 }
 
