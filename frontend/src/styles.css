@@ -3315,18 +3315,22 @@ button.sidebar-group-head.clickable:hover {
   max-width: 100%;
 }
 
-/* Per-message overflow menu (tří-tečka) sits anchored to the right edge
-   of the bubble. Hidden on desktop until the row is hovered; faintly
-   visible on touch devices where there's no hover. The button stops
-   click propagation so the document-level "close menu" handler doesn't
-   immediately re-close it. */
+/* Per-message action cluster anchored to the bubble's top-right.
+   Two parallel handles, sized identically so the row reads as one unit:
+     • 🙂  — open reaction picker (everyone with a profile)
+     • ⋯   — open Edit/Delete menu (own messages only)
+   Hidden on desktop until the row is hovered; faintly visible on touch
+   devices where there's no hover. Buttons stop click propagation so the
+   document-level "close" handler doesn't immediately re-close them. */
 .chat-msg-actions {
   position: absolute;
   top: -2px;
   right: -2px;
   display: inline-flex;
   align-items: flex-start;
+  gap: 4px;
 }
+.chat-msg-react-btn,
 .chat-msg-menu-btn {
   width: 26px;
   height: 26px;
@@ -3339,17 +3343,22 @@ button.sidebar-group-head.clickable:hover {
   align-items: center;
   justify-content: center;
   padding: 0;
-  font-size: 1rem;
+  font-size: 0.95rem;
   line-height: 1;
   opacity: 0;
   transition: opacity 0.12s, color 0.12s, border-color 0.12s;
 }
+.chat-msg-menu-btn { font-size: 1rem; }
+.chat-msg-row:hover .chat-msg-react-btn,
 .chat-msg-row:hover .chat-msg-menu-btn,
+.chat-msg-react-btn:focus-visible,
 .chat-msg-menu-btn:focus-visible { opacity: 1; }
+.chat-msg-react-btn:hover,
 .chat-msg-menu-btn:hover { color: var(--ink); border-color: var(--ink-muted); }
 @media (hover: none) {
-  /* No hover on touch — keep the dots visible but tame so they don't
+  /* No hover on touch — keep the buttons visible but tame so they don't
      compete with message body. */
+  .chat-msg-react-btn,
   .chat-msg-menu-btn { opacity: 0.55; }
 }
 

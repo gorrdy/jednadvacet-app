@@ -248,40 +248,46 @@ export const Thread: FC<Props> = ({ slug, label, onBack, onAuthorRequest }) => {
       );
     }
     const canReact = !!ownerId && !!profile;
-    const showMenuBtn = canReact || mine;
+    const showActions = canReact || mine;
     return (
       <div className="chat-bubble">
         {m.body}
         {m.editedAt && <span className="chat-edited-tag" title={`Upraveno ${formatRelative(m.editedAt)}`}>(upraveno)</span>}
-        {showMenuBtn && (
+        {showActions && (
           <div className="chat-msg-actions" onClick={(e) => e.stopPropagation()}>
-            <button
-              type="button"
-              className="chat-msg-menu-btn"
-              onClick={() => setMenuFor((id) => id === m.id ? null : m.id)}
-              aria-label="Možnosti zprávy"
-              title="Možnosti"
-            >
-              ⋯
-            </button>
-            {menuFor === m.id && (
-              <div className="chat-msg-menu" role="menu">
-                {canReact && (
-                  <button type="button" role="menuitem" className="chat-msg-menu-item" onClick={() => { setMenuFor(null); setPickingFor(m.id); }}>
-                    Reagovat
-                  </button>
+            {canReact && (
+              <button
+                type="button"
+                className="chat-msg-react-btn"
+                onClick={() => setPickingFor((p) => p === m.id ? null : m.id)}
+                aria-label="Přidat reakci"
+                title="Reagovat"
+              >
+                🙂
+              </button>
+            )}
+            {mine && (
+              <>
+                <button
+                  type="button"
+                  className="chat-msg-menu-btn"
+                  onClick={() => setMenuFor((id) => id === m.id ? null : m.id)}
+                  aria-label="Možnosti zprávy"
+                  title="Možnosti"
+                >
+                  ⋯
+                </button>
+                {menuFor === m.id && (
+                  <div className="chat-msg-menu" role="menu">
+                    <button type="button" role="menuitem" className="chat-msg-menu-item" onClick={() => beginEdit(m)}>
+                      Upravit
+                    </button>
+                    <button type="button" role="menuitem" className="chat-msg-menu-item danger" onClick={() => { setMenuFor(null); void removeOwn(m); }}>
+                      Smazat
+                    </button>
+                  </div>
                 )}
-                {mine && (
-                  <button type="button" role="menuitem" className="chat-msg-menu-item" onClick={() => beginEdit(m)}>
-                    Upravit
-                  </button>
-                )}
-                {mine && (
-                  <button type="button" role="menuitem" className="chat-msg-menu-item danger" onClick={() => { setMenuFor(null); void removeOwn(m); }}>
-                    Smazat
-                  </button>
-                )}
-              </div>
+              </>
             )}
           </div>
         )}
