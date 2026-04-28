@@ -6,7 +6,7 @@
 // lives in chat_user on the backend, keyed by Evolu appOwner.id, so it
 // syncs across devices. See useChatProfile.
 
-import { LS } from "./storageKeys";
+import { LS, safeLs } from "./storageKeys";
 
 const TOKEN_KEY = LS.ChatToken;
 
@@ -23,13 +23,9 @@ function generateToken(): string {
 }
 
 export function getOrCreateChatToken(): string {
-  try {
-    const existing = localStorage.getItem(TOKEN_KEY);
-    if (existing && existing.length >= 16) return existing;
-    const t = generateToken();
-    localStorage.setItem(TOKEN_KEY, t);
-    return t;
-  } catch {
-    return generateToken();
-  }
+  const existing = safeLs.get(TOKEN_KEY);
+  if (existing && existing.length >= 16) return existing;
+  const t = generateToken();
+  safeLs.set(TOKEN_KEY, t);
+  return t;
 }

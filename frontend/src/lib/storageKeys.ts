@@ -68,3 +68,31 @@ export const SS = {
    *  reload loop if Evolu still won't init on the second try. */
   EvoluRecoveryAttempted: "jednadvacet-evolu-recovery-attempted",
 } as const;
+
+/** Quota-safe localStorage wrappers. Every `localStorage.*` access in
+ *  the codebase should go through here so iOS Safari quota errors,
+ *  storage-disabled browsers, and incognito mode never throw mid-flow. */
+export const safeLs = {
+  get(key: string): string | null {
+    try { return localStorage.getItem(key); } catch { return null; }
+  },
+  set(key: string, value: string): void {
+    try { localStorage.setItem(key, value); } catch { /* ignore */ }
+  },
+  remove(key: string): void {
+    try { localStorage.removeItem(key); } catch { /* ignore */ }
+  },
+};
+
+/** Same shape but for sessionStorage — used by SS.* keys. */
+export const safeSs = {
+  get(key: string): string | null {
+    try { return sessionStorage.getItem(key); } catch { return null; }
+  },
+  set(key: string, value: string): void {
+    try { sessionStorage.setItem(key, value); } catch { /* ignore */ }
+  },
+  remove(key: string): void {
+    try { sessionStorage.removeItem(key); } catch { /* ignore */ }
+  },
+};

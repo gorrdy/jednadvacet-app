@@ -14,7 +14,7 @@ import {
   type DirectoryTile,
   type ScrollAnchor,
 } from "../data/directory";
-import { LS } from "../lib/storageKeys";
+import { LS, safeLs } from "../lib/storageKeys";
 
 interface GridProps {
   onNavigate: (t: DirectoryTab) => void;
@@ -28,17 +28,15 @@ const DEFAULT_OPEN: Record<string, boolean> = {
 };
 
 function readOpenState(): Record<string, boolean> {
+  const raw = safeLs.get(LS.DirectoryOpen);
+  if (!raw) return DEFAULT_OPEN;
   try {
-    const raw = localStorage.getItem(LS.DirectoryOpen);
-    if (!raw) return DEFAULT_OPEN;
-    const parsed = JSON.parse(raw);
-    return { ...DEFAULT_OPEN, ...parsed };
+    return { ...DEFAULT_OPEN, ...JSON.parse(raw) };
   } catch { return DEFAULT_OPEN; }
 }
 
 function writeOpenState(s: Record<string, boolean>) {
-  try { localStorage.setItem(LS.DirectoryOpen, JSON.stringify(s)); }
-  catch { /* ignore */ }
+  safeLs.set(LS.DirectoryOpen, JSON.stringify(s));
 }
 
 export const DirectoryGrid: FC<GridProps> = ({ onNavigate, onScrollTo }) => {

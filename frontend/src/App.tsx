@@ -19,7 +19,7 @@ import { useOnlineCount } from "./hooks/useOnlineCount";
 import { captureReferralFromUrl } from "./lib/tierSystem";
 import { useCashuBootstrap } from "./lib/cashuBootstrap";
 import { useEvoluMigrations } from "./lib/evoluMigrations";
-import { LS, SS } from "./lib/storageKeys";
+import { LS, SS, safeLs } from "./lib/storageKeys";
 import { scrollContentTop } from "./lib/scroll";
 
 type Tab = "home" | "articles" | "calendar" | "komunity" | "messages" | "wallet" | "bazar" | "profile";
@@ -63,15 +63,13 @@ export const App: FC = () => {
     );
   }
 
-  const [seenWelcome, setSeenWelcome] = useState(() =>
-    typeof localStorage !== "undefined" && localStorage.getItem(LS.SeenWelcome) === "1",
-  );
+  const [seenWelcome, setSeenWelcome] = useState(() => safeLs.get(LS.SeenWelcome) === "1");
 
   if (!seenWelcome) {
     return (
       <Welcome
         onContinue={() => {
-          localStorage.setItem(LS.SeenWelcome, "1");
+          safeLs.set(LS.SeenWelcome, "1");
           setSeenWelcome(true);
         }}
       />
@@ -228,11 +226,8 @@ const validTabs: readonly Tab[] = ["home", "articles", "calendar", "komunity", "
 const isTab = (s: string): s is Tab => (validTabs as readonly string[]).includes(s);
 
 const readPersistedTab = (): Tab => {
-  if (typeof window === "undefined") return "home";
-  try {
-    const v = localStorage.getItem(LS.ActiveTab);
-    if (v && isTab(v)) return v;
-  } catch { /* ignore */ }
+  const v = safeLs.get(LS.ActiveTab);
+  if (v && isTab(v)) return v;
   return "home";
 };
 
@@ -254,9 +249,7 @@ const AppShell: FC = () => {
   // build of this app. Self-clears once data has moved.
   useEvoluMigrations();
 
-  useEffect(() => {
-    try { localStorage.setItem(LS.ActiveTab, tab); } catch { /* ignore */ }
-  }, [tab]);
+  useEffect(() => { safeLs.set(LS.ActiveTab, tab); }, [tab]);
 
   // Capture ?ref=<code> v URL hned na startu — uloží do localStorage
   // a sundá z URL. Po vytvoření chat_user profilu (Profile tab) se

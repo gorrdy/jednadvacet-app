@@ -24,7 +24,7 @@ import { QrScanner } from "../components/QrScanner";
 import { Avatar } from "../components/Avatar";
 import { IconBell, IconQr, IconUsers, IconX } from "../components/Icons";
 import { useUnreadTracker, type UnreadCounts } from "../hooks/useUnreadTracker";
-import { LS } from "../lib/storageKeys";
+import { LS, safeLs } from "../lib/storageKeys";
 
 interface Props {
   deepLinkSlug?: string | null;
@@ -100,9 +100,9 @@ export const Messages: FC<Props> = ({ deepLinkSlug, onDeepLinkConsumed }) => {
   // honor that across reloads.
   type SectionKey = "dms" | "channels" | "events";
   const [collapsed, setCollapsed] = useState<Record<SectionKey, boolean>>(() => {
+    const raw = safeLs.get(LS.ChatSectionsCollapsed);
+    if (!raw) return { dms: false, channels: false, events: false };
     try {
-      const raw = localStorage.getItem(LS.ChatSectionsCollapsed);
-      if (!raw) return { dms: false, channels: false, events: false };
       const parsed = JSON.parse(raw) as Partial<Record<SectionKey, boolean>>;
       return {
         dms: !!parsed.dms,
@@ -114,8 +114,7 @@ export const Messages: FC<Props> = ({ deepLinkSlug, onDeepLinkConsumed }) => {
   const toggleCollapse = useCallback((key: SectionKey) => {
     setCollapsed((prev) => {
       const next = { ...prev, [key]: !prev[key] };
-      try { localStorage.setItem(LS.ChatSectionsCollapsed, JSON.stringify(next)); }
-      catch { /* ignore */ }
+      safeLs.set(LS.ChatSectionsCollapsed, JSON.stringify(next));
       return next;
     });
   }, []);

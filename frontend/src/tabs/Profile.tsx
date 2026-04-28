@@ -7,7 +7,7 @@
 import { use, useMemo, useState, type FC } from "react";
 import { evolu } from "../evolu";
 import { useUserPrefs } from "../hooks/usePrefs";
-import { LS } from "../lib/storageKeys";
+import { LS, safeLs } from "../lib/storageKeys";
 import { buildCatTag, buildChatTag, buildCityTag, buildUserTag } from "../../../shared/pushTags.js";
 import { usePush } from "../hooks/usePush";
 import { sendTestPush } from "../api";
@@ -45,15 +45,11 @@ export const Profile: FC = () => {
   // Per-device toggle: do we want push notifications for new chat messages?
   // Stored in localStorage (not Evolu) so the user can decide per-device
   // — phone yes, desktop no is a legit preference.
-  const [chatPush, setChatPush] = useState<boolean>(() => {
-    try { return localStorage.getItem(LS.ChatPush) === "1"; } catch { return false; }
-  });
+  const [chatPush, setChatPush] = useState<boolean>(() => safeLs.get(LS.ChatPush) === "1");
   const toggleChatPush = (next: boolean) => {
     setChatPush(next);
-    try {
-      if (next) localStorage.setItem(LS.ChatPush, "1");
-      else localStorage.removeItem(LS.ChatPush);
-    } catch { /* ignore */ }
+    if (next) safeLs.set(LS.ChatPush, "1");
+    else safeLs.remove(LS.ChatPush);
   };
 
   const tags = [
