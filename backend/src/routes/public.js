@@ -9,6 +9,14 @@ import {
   profileShape, validOwnerId, validOpaqueToken, validDisplayName,
 } from "../helpers.js";
 import { CITIES } from "../../cities.js";
+import {
+  REACTIONS,
+  BIO_MAX_CHARS,
+  AVATAR_MAX_BYTES,
+  MESSAGE_MAX_CHARS,
+  EVENT_CHAT_ARCHIVE_DAYS,
+  EVENT_CHAT_LOOKAHEAD_DAYS,
+} from "../../../shared/constants.js";
 import { getCommunities } from "../communities.js";
 import {
   ensureUserTier,
@@ -56,7 +64,7 @@ function parseEventSlug(slug) {
 // thread becomes read-only — old conversations can still be browsed but
 // no new messages stick around. Caller passes `forWrite` to distinguish
 // the two access modes.
-const EVENT_CHAT_ARCHIVE_MS = 7 * 24 * 60 * 60 * 1000;
+const EVENT_CHAT_ARCHIVE_MS = EVENT_CHAT_ARCHIVE_DAYS * 24 * 60 * 60 * 1000;
 
 /** Returns true if `ownerId` may read/write messages in `slug`. Public slugs
  *  are open; dm slugs require the caller to be one of the pair AND the
@@ -504,8 +512,6 @@ export function mountPublicRoutes(app) {
 
   // Avatar is a base64 data URL. Guard against blow-up: ~200 KB is enough
   // for a 256×256 JPEG from client-side resize; bigger = reject.
-  const AVATAR_MAX_BYTES = 220_000;
-  const BIO_MAX_CHARS = 500;
   const DATA_URL_RE = /^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/;
 
   app.get("/api/chat/profile/:ownerId", (req, res) => {
@@ -734,7 +740,7 @@ export function mountPublicRoutes(app) {
   //   { ownerId, emoji, op: "add" | "remove" }
   // Server enforces a small allowlist of emojis to prevent abuse and
   // keep the UI's fixed-set picker honest.
-  const ALLOWED_REACTIONS = new Set(["👍", "❤️", "😂", "🔥", "👀", "😮", "🙏", "🚀"]);
+  const ALLOWED_REACTIONS = new Set(REACTIONS);
   app.post("/api/messages/:id/reactions", (req, res) => {
     const messageId = String(req.params.id);
     const { ownerId, emoji, op } = req.body || {};
@@ -776,7 +782,7 @@ export function mountPublicRoutes(app) {
     if (typeof body !== "string") return res.status(400).json({ error: "body required" });
     const trimmed = body.trim();
     if (trimmed.length === 0) return res.status(400).json({ error: "empty body" });
-    if (trimmed.length > 2000) return res.status(400).json({ error: "body too long (max 2000)" });
+    if (trimmed.length > MESSAGE_MAX_CHARS) return res.status(400).json({ error: `body too long (max ${MESSAGE_MAX_CHARS})` });
 
     // The user must have claimed a nick first. Without a chat_user row
     // we'd have nothing to show next to the message.
@@ -830,8 +836,8 @@ export function mountPublicRoutes(app) {
     if (!validOwnerId(ownerId)) return res.status(400).json({ error: "bad ownerId" });
 
     const now = new Date();
-    const forwardWindowEnd = new Date(now.getTime() + 5 * 24 * 60 * 60 * 1000);
-    const backwardWindowStart = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const forwardWindowEnd = new Date(now.getTime() + EVENT_CHAT_LOOKAHEAD_DAYS * 24 * 60 * 60 * 1000);
+    const backwardWindowStart = new Date(now.getTime() - EVENT_CHAT_ARCHIVE_DAYS * 24 * 60 * 60 * 1000);
 
     // event_rsvp PRIMARY KEY is (token, event_id), so a user signed in on
     // 3 devices has 3 RSVP rows per event — without GROUP BY the JOIN
