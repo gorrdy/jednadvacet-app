@@ -8,7 +8,7 @@
 
 import { useEffect, useState, type FC } from "react";
 import { fetchChatProfile, type ChatProfile } from "../api";
-import { initialsFor } from "../lib/imageResize";
+import { Avatar } from "./Avatar";
 
 interface Props {
   ownerId: string;
@@ -49,11 +49,7 @@ export const UserProfileModal: FC<Props> = ({ ownerId, preloaded, onStartDm, onC
           {profile && (
             <>
               <div className="user-profile-head">
-                <span className="chat-avatar user-profile-avatar" aria-hidden="true">
-                  {profile.avatar
-                    ? <img src={profile.avatar} alt="" />
-                    : <span className="initials">{initialsFor(profile.displayName)}</span>}
-                </span>
+                <Avatar src={profile.avatar} name={profile.displayName} className="chat-avatar user-profile-avatar" />
                 <div className="user-profile-name-row">
                   <strong className="user-profile-name">{profile.displayName}</strong>
                   {profile.tier >= 2 && (

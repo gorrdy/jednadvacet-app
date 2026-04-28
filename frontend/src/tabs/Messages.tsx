@@ -21,7 +21,7 @@ import {
 } from "../api";
 import { Thread } from "../chat/Thread";
 import { QrScanner } from "../components/QrScanner";
-import { initialsFor } from "../lib/imageResize";
+import { Avatar } from "../components/Avatar";
 import { IconBell, IconQr, IconUsers, IconX } from "../components/Icons";
 import { useUnreadTracker, type UnreadCounts } from "../hooks/useUnreadTracker";
 import { LS } from "../lib/storageKeys";
@@ -502,11 +502,7 @@ const ChatChannelList: FC<{
                 className={`sidebar-row ${isActive ? "active" : ""} ${u?.unread ? "has-unread" : ""}`}
                 onClick={() => onSelectDm(c)}
               >
-                <span className="sidebar-avatar" aria-hidden="true">
-                  {c.partnerAvatar
-                    ? <img src={c.partnerAvatar} alt="" />
-                    : <span className="initials">{initialsFor(c.partnerName ?? "?")}</span>}
-                </span>
+                <Avatar src={c.partnerAvatar} name={c.partnerName ?? "?"} className="sidebar-avatar" />
                 <span className="sidebar-row-label">{c.partnerName ?? "neznámý"}</span>
                 {/* For DMs, any unread IS effectively a mention (1:1). Show count. */}
                 {u?.unread ? <span className="sidebar-mention">{u.unread}</span> : null}
@@ -682,11 +678,7 @@ const RequestsPane: FC<{
         ) : (
           incoming.map((r) => (
             <div key={r.id} className="dm-request-row">
-              <span className="sidebar-avatar" aria-hidden="true">
-                {r.fromAvatar
-                  ? <img src={r.fromAvatar} alt="" />
-                  : <span className="initials">{initialsFor(r.fromName ?? "?")}</span>}
-              </span>
+              <Avatar src={r.fromAvatar} name={r.fromName ?? "?"} className="sidebar-avatar" />
               <div className="dm-request-body">
                 <div className="dm-request-name">{r.fromName ?? "neznámý"}</div>
                 <div className="small muted mono" style={{ wordBreak: "break-all" }}>{r.fromOwnerId}</div>
@@ -706,11 +698,7 @@ const RequestsPane: FC<{
           <h3>Moje odeslané ({outgoing.length})</h3>
           {outgoing.map((r) => (
             <div key={r.id} className="dm-request-row">
-              <span className="sidebar-avatar" aria-hidden="true">
-                {r.toAvatar
-                  ? <img src={r.toAvatar} alt="" />
-                  : <span className="initials">{initialsFor(r.toName ?? "?")}</span>}
-              </span>
+              <Avatar src={r.toAvatar} name={r.toName ?? "?"} className="sidebar-avatar" />
               <div className="dm-request-body">
                 <div className="dm-request-name">{r.toName ?? "neznámý"}</div>
                 <div className="small muted">{r.status === "pending" ? "Čeká na přijetí" : "Odmítnuto"}</div>

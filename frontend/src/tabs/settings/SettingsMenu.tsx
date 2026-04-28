@@ -1,7 +1,7 @@
 import { type FC } from "react";
 import { useChatProfile } from "../../hooks/useChatProfile";
 import { useCashu } from "../../hooks/useCashu";
-import { initialsFor } from "../../lib/imageResize";
+import { Avatar } from "../../components/Avatar";
 import { SettingsGroup, SettingsRow, type SettingsPanel } from "./shared";
 
 interface Props {
@@ -23,11 +23,7 @@ export const SettingsMenu: FC<Props> = ({ prefsCities, prefsCategories, pushActi
         onClick={() => onOpen("profile")}
         aria-label="Upravit profil"
       >
-        <span className="settings-profile-avatar">
-          {profile?.avatar
-            ? <img src={profile.avatar} alt="" />
-            : <span className="initials">{initialsFor(profile?.displayName ?? "?")}</span>}
-        </span>
+        <Avatar src={profile?.avatar} name={profile?.displayName ?? "?"} className="settings-profile-avatar" />
         <span className="settings-profile-text">
           <strong>{profile?.displayName ?? "Nastav přezdívku"}</strong>
           <span className="small muted">

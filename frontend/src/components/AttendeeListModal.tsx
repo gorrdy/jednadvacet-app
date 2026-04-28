@@ -9,7 +9,7 @@
 
 import { useEffect, useState, type FC } from "react";
 import { fetchEventAttendees, type EventAttendees } from "../api";
-import { initialsFor } from "../lib/imageResize";
+import { Avatar } from "./Avatar";
 
 interface Props {
   eventId: string;
@@ -55,11 +55,7 @@ export const AttendeeListModal: FC<Props> = ({ eventId, eventTitle, onClose }) =
                 <ul className="attendee-list">
                   {data.named.map((a) => (
                     <li key={a.ownerId} className="attendee-row">
-                      <span className="chat-avatar" aria-hidden="true">
-                        {a.avatar
-                          ? <img src={a.avatar} alt="" />
-                          : <span className="initials">{initialsFor(a.displayName)}</span>}
-                      </span>
+                      <Avatar src={a.avatar} name={a.displayName} className="chat-avatar" />
                       <span className="attendee-name">{a.displayName}</span>
                       {a.tier >= 2 && (
                         <span className={`tier-badge tier-${a.tier}`} title={`Tier ${a.tier}`}>

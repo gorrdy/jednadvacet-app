@@ -9,7 +9,7 @@ import {
   type EventProposalReview,
 } from "../../api";
 import { cityName } from "../../data/cities";
-import { initialsFor } from "../../lib/imageResize";
+import { Avatar } from "../../components/Avatar";
 
 type Tab = "pending" | "approved" | "rejected";
 
@@ -69,11 +69,7 @@ export const EventProposalsView: FC<{ token: string }> = ({ token }) => {
           items.map((p) => (
             <div key={p.id} className="card" style={{ marginBottom: "0.8rem" }}>
               <div style={{ display: "flex", gap: "0.8rem", alignItems: "flex-start" }}>
-                <span className="chat-avatar" aria-hidden="true" style={{ width: 36, height: 36 }}>
-                  {p.avatar
-                    ? <img src={p.avatar} alt="" />
-                    : <span className="initials">{initialsFor(p.proposerName)}</span>}
-                </span>
+                <Avatar src={p.avatar} name={p.proposerName} className="chat-avatar" style={{ width: 36, height: 36 }} />
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap" }}>
                     <strong>{p.title}</strong>

@@ -6,7 +6,7 @@
 import { useEffect, useState, type FC } from "react";
 import { fetchCommunityStats, type CommunityStats } from "../api";
 import { TIER_NAMES } from "../lib/tierSystem";
-import { initialsFor } from "../lib/imageResize";
+import { Avatar } from "./Avatar";
 
 export const CommunityStatsCard: FC = () => {
   const [stats, setStats] = useState<CommunityStats | null>(null);
@@ -56,11 +56,7 @@ export const CommunityStatsCard: FC = () => {
           <ul className="top-organizers">
             {stats.topOrganizers.map((o) => (
               <li key={o.displayName} className="top-organizer-row">
-                <span className="chat-avatar" aria-hidden="true">
-                  {o.avatar
-                    ? <img src={o.avatar} alt="" />
-                    : <span className="initials">{initialsFor(o.displayName)}</span>}
-                </span>
+                <Avatar src={o.avatar} name={o.displayName} className="chat-avatar" />
                 <span className="top-organizer-name">{o.displayName}</span>
                 <span className={`tier-badge tier-${o.tier}`}>T{o.tier}</span>
                 <span className="small muted">

@@ -6,7 +6,7 @@ import { useChatProfile } from "../hooks/useChatProfile";
 import { useChatProfileMap } from "../hooks/useChatProfileMap";
 import { useChannelStream } from "../hooks/useChannelStream";
 import { formatRelative, formatTime } from "../lib/fmt";
-import { initialsFor } from "../lib/imageResize";
+import { Avatar } from "../components/Avatar";
 import { IconX } from "../components/Icons";
 import { UserProfileModal } from "../components/UserProfileModal";
 
@@ -210,11 +210,7 @@ export const Thread: FC<Props> = ({ slug, label, onBack, onAuthorRequest }) => {
               >
                 {newAuthor ? (
                   <div className="chat-msg-row">
-                    <span className="chat-avatar" aria-hidden="true">
-                      {avatar
-                        ? <img src={avatar} alt="" />
-                        : <span className="initials">{initialsFor(name)}</span>}
-                    </span>
+                    <Avatar src={avatar} name={name} className="chat-avatar" />
                     <div className="chat-msg-body">
                       <div className="chat-msg-meta">
                         {!mine && m.authorOwnerId ? (

@@ -15,7 +15,7 @@ import {
 } from "../api";
 import { CITIES, cityName } from "../data/cities";
 import { fetchTierState } from "../lib/tierSystem";
-import { initialsFor } from "../lib/imageResize";
+import { Avatar } from "../components/Avatar";
 import { UserProfileModal } from "../components/UserProfileModal";
 
 type View = "browse" | "mine";
@@ -264,11 +264,7 @@ const OfferCard: FC<{
       </div>
       <div className="bazar-card-foot">
         <button type="button" className="bazar-card-author" onClick={onViewProfile}>
-          <span className="chat-avatar" aria-hidden="true" style={{ width: 24, height: 24 }}>
-            {offer.avatar
-              ? <img src={offer.avatar} alt="" />
-              : <span className="initials">{initialsFor(offer.proposerName)}</span>}
-          </span>
+          <Avatar src={offer.avatar} name={offer.proposerName} className="chat-avatar" style={{ width: 24, height: 24 }} />
           <span>{offer.proposerName}</span>
           {offer.tier >= 2 && (
             <span className={`tier-badge tier-${offer.tier}`} title={`Tier ${offer.tier}`}>T{offer.tier}</span>

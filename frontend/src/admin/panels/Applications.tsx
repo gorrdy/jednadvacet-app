@@ -10,7 +10,7 @@ import {
   type AdminApplicationReview,
 } from "../../api";
 import { cityName } from "../../data/cities";
-import { initialsFor } from "../../lib/imageResize";
+import { Avatar } from "../../components/Avatar";
 
 type Tab = "pending" | "approved" | "rejected";
 
@@ -68,11 +68,7 @@ export const ApplicationsView: FC<{ token: string }> = ({ token }) => {
           items.map((a) => (
             <div key={a.id} className="application-row card" style={{ marginBottom: "0.8rem" }}>
               <div style={{ display: "flex", gap: "0.8rem", alignItems: "flex-start" }}>
-                <span className="chat-avatar" aria-hidden="true" style={{ width: 40, height: 40 }}>
-                  {a.avatar
-                    ? <img src={a.avatar} alt="" />
-                    : <span className="initials">{initialsFor(a.displayName)}</span>}
-                </span>
+                <Avatar src={a.avatar} name={a.displayName} className="chat-avatar" style={{ width: 40, height: 40 }} />
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap" }}>
                     <strong>{a.displayName}</strong>
