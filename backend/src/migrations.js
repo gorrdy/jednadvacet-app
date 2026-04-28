@@ -58,12 +58,16 @@ export function runMigrations(db) {
 
   // channel_message: author_owner_id for cross-device identity. Pre-
   // existing rows have NULL and fall back to the denormalised
-  // author_name column.
+  // author_name column. edited_at is NULL until the author edits the
+  // message; clients render an "(upraveno)" hint when present.
   {
     const cols = new Set(db.prepare("PRAGMA table_info(channel_message)").all().map((c) => c.name));
     if (cols.size > 0 && !cols.has("author_owner_id")) {
       db.exec("ALTER TABLE channel_message ADD COLUMN author_owner_id TEXT");
       db.exec("CREATE INDEX IF NOT EXISTS idx_channel_message_owner ON channel_message(author_owner_id)");
+    }
+    if (cols.size > 0 && !cols.has("edited_at")) {
+      db.exec("ALTER TABLE channel_message ADD COLUMN edited_at TEXT");
     }
   }
 

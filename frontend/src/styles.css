@@ -3315,13 +3315,105 @@ button.sidebar-group-head.clickable:hover {
   max-width: 100%;
 }
 
-/* Own messages: long-press deletes. Suppress iOS callout / text-selection
-   so the hold doesn't pop the system menu and doesn't visually fight the
-   gesture. Reactions are still tap-only via the inline button. */
-.chat-bubble-mine {
-  -webkit-touch-callout: none;
-  -webkit-user-select: none;
-  user-select: none;
+/* Per-message overflow menu (tří-tečka) sits anchored to the right edge
+   of the bubble. Hidden on desktop until the row is hovered; faintly
+   visible on touch devices where there's no hover. The button stops
+   click propagation so the document-level "close menu" handler doesn't
+   immediately re-close it. */
+.chat-msg-actions {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  display: inline-flex;
+  align-items: flex-start;
+}
+.chat-msg-menu-btn {
+  width: 26px;
+  height: 26px;
+  border-radius: 0.4rem;
+  border: 1px solid var(--hairline);
+  background: var(--bg-elev);
+  color: var(--ink-muted);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  font-size: 1rem;
+  line-height: 1;
+  opacity: 0;
+  transition: opacity 0.12s, color 0.12s, border-color 0.12s;
+}
+.chat-msg-row:hover .chat-msg-menu-btn,
+.chat-msg-menu-btn:focus-visible { opacity: 1; }
+.chat-msg-menu-btn:hover { color: var(--ink); border-color: var(--ink-muted); }
+@media (hover: none) {
+  /* No hover on touch — keep the dots visible but tame so they don't
+     compete with message body. */
+  .chat-msg-menu-btn { opacity: 0.55; }
+}
+
+.chat-msg-menu {
+  position: absolute;
+  top: 32px;
+  right: 0;
+  z-index: 10;
+  min-width: 120px;
+  background: var(--bg-elev);
+  border: 1px solid var(--hairline);
+  border-radius: 0.5rem;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
+  padding: 0.25rem;
+  display: flex;
+  flex-direction: column;
+}
+.chat-msg-menu-item {
+  background: none;
+  border: 0;
+  color: var(--ink);
+  cursor: pointer;
+  padding: 0.45rem 0.7rem;
+  text-align: left;
+  border-radius: 0.35rem;
+  font-size: 0.9rem;
+}
+.chat-msg-menu-item:hover { background: var(--surface); }
+.chat-msg-menu-item.danger { color: var(--danger); }
+.chat-msg-menu-item.danger:hover { background: var(--danger-soft, var(--surface)); }
+
+/* Edit mode: textarea replaces the bubble body in place. */
+.chat-bubble-editing {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  width: 100%;
+}
+.chat-edit-input {
+  width: 100%;
+  resize: vertical;
+  min-height: 2.4rem;
+  background: var(--bg-elev);
+  border: 1px solid var(--hairline);
+  border-radius: 0.5rem;
+  padding: 0.5rem 0.7rem;
+  color: var(--ink);
+  font: inherit;
+  line-height: 1.45;
+}
+.chat-edit-input:focus {
+  outline: none;
+  border-color: var(--ember);
+}
+.chat-edit-actions {
+  display: flex;
+  gap: 0.4rem;
+  justify-content: flex-end;
+}
+.chat-edited-tag {
+  margin-left: 0.4rem;
+  font-size: 0.72rem;
+  color: var(--ink-faint);
+  font-style: italic;
 }
 
 /* ─── Composer (Discord-style rounded pill) ─────────────────────── */
@@ -3719,29 +3811,46 @@ button.sidebar-group-head.clickable:hover {
   white-space: nowrap;
 }
 
-/* Chat reaction chips + picker. The +🙂 button on a bubble opens the
- * picker inline; existing reactions render as clickable chips that
- * highlight when "mine" so the user can toggle them off. */
-.chat-react-btn {
-  position: absolute;
-  bottom: -0.4rem;
-  right: -0.5rem;
+/* "+🙂" add-reaction button. Two flavours:
+ *   • inline (default) — sits at the end of the chat-reactions row next
+ *     to existing reaction chips.
+ *   • .floating          — absolutely-positioned tag glued to the
+ *     bottom-right of the message body, hover-revealed on desktop, faint
+ *     on touch. Used when the message has no reactions yet, so we don't
+ *     waste a whole row for it. */
+.reaction-add-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15rem;
   background: var(--surface-2);
   border: 1px solid var(--hairline);
   border-radius: 999px;
-  padding: 0.05rem 0.4rem;
-  font-size: 0.7rem;
+  padding: 0.1rem 0.55rem;
+  font-size: 0.8rem;
+  line-height: 1.4;
   cursor: pointer;
+  color: var(--ink-muted);
+  transition: color 0.12s, border-color 0.12s, background 0.12s, opacity 0.12s;
+}
+.reaction-add-btn:hover { color: var(--ink); border-color: var(--ink-muted); background: var(--surface); }
+
+/* Floating variant — out of the flow so empty-reaction-row messages keep
+   their tight Discord-style spacing. */
+.chat-msg-body { position: relative; }
+.reaction-add-btn.floating {
+  position: absolute;
+  bottom: -0.55rem;
+  right: 0.25rem;
+  font-size: 0.72rem;
+  padding: 0.05rem 0.45rem;
   opacity: 0;
-  transition: opacity 0.15s;
+  z-index: 2;
 }
-.chat-bubble:hover .chat-react-btn,
-.chat-msg:focus-within .chat-react-btn {
-  opacity: 1;
-}
+.chat-msg:hover .reaction-add-btn.floating,
+.chat-msg:focus-within .reaction-add-btn.floating { opacity: 1; }
 @media (hover: none) {
-  /* Touch devices: keep the button visible because there's no hover. */
-  .chat-react-btn { opacity: 0.7; }
+  /* Touch: no hover, so keep the floating button faintly visible. */
+  .reaction-add-btn.floating { opacity: 0.55; }
 }
 .chat-reactions {
   display: flex;

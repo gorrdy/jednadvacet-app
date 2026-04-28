@@ -150,6 +150,7 @@ db.exec(`
     author_owner_id TEXT,                      -- Evolu appOwner.id; stable across devices
     author_name     TEXT NOT NULL,             -- snapshot at post time, fallback when no owner_id
     body            TEXT NOT NULL,
+    edited_at       TEXT,                      -- NULL until the author edits; ISO timestamp once edited
     created_at      TEXT NOT NULL DEFAULT (datetime('now'))
   );
   CREATE INDEX IF NOT EXISTS idx_channel_message_slug   ON channel_message(channel_slug, created_at);

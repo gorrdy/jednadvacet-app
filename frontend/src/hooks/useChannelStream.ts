@@ -1,6 +1,6 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { API_BASE } from "../lib/http";
-import type { ChannelMessage } from "../api";
+import type { ChannelEdit, ChannelMessage } from "../api";
 
 /**
  * Subscribe to one or more channels over Server-Sent Events. The browser
@@ -15,9 +15,18 @@ export function useChannelStream(
   slugs: readonly string[],
   onMessage: (m: ChannelMessage) => void,
   ownerId?: string | null,
+  onEdit?: (e: ChannelEdit) => void,
 ): void {
   // Stable key so we don't tear down the connection every re-render.
   const key = slugs.slice().sort().join(",");
+
+  // Capture the latest callbacks in refs so we don't have to put them
+  // in the effect's dep array — the EventSource lifecycle is tied to
+  // the stream key, not to callback identity churn.
+  const onMessageRef = useRef(onMessage);
+  onMessageRef.current = onMessage;
+  const onEditRef = useRef(onEdit);
+  onEditRef.current = onEdit;
 
   useEffect(() => {
     if (!key) return;
@@ -28,8 +37,15 @@ export function useChannelStream(
 
     es.onmessage = (ev) => {
       try {
-        const data = JSON.parse(ev.data) as { kind: string; message?: ChannelMessage };
-        if (data.kind === "message" && data.message) onMessage(data.message);
+        const data = JSON.parse(ev.data) as
+          | { kind: "message"; message: ChannelMessage }
+          | { kind: "edit"; id: string; body: string; editedAt: string }
+          | { kind: string };
+        if (data.kind === "message" && "message" in data && data.message) {
+          onMessageRef.current(data.message);
+        } else if (data.kind === "edit" && "id" in data && "body" in data && "editedAt" in data) {
+          onEditRef.current?.({ id: data.id, body: data.body, editedAt: data.editedAt });
+        }
       } catch {
         /* malformed frame — ignore */
       }

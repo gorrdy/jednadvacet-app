@@ -265,7 +265,7 @@ export function mountChatRoutes(app) {
   const messageRowShape = `
     m.id, m.channel_slug, m.author_token, m.author_owner_id,
     COALESCE(u.display_name, m.author_name) AS author_name,
-    m.body, m.created_at
+    m.body, m.created_at, m.edited_at
   `;
 
   app.get("/api/channels/:slug/messages", (req, res) => {
@@ -327,6 +327,7 @@ export function mountChatRoutes(app) {
       authorName: r.author_name,
       body: r.body,
       createdAt: r.created_at,
+      editedAt: r.edited_at ?? null,
       reactions: reactionsByMsg.get(r.id) ?? [],
     })));
   });
@@ -401,6 +402,7 @@ export function mountChatRoutes(app) {
       authorName: profile.display_name,
       body: trimmed,
       createdAt: new Date().toISOString().replace("T", " ").slice(0, 19),
+      editedAt: null,
       // New messages have no reactions yet, but the field must always be
       // present — frontend reads `m.reactions.length` unconditionally and
       // crashes (TypeError → iOS Safari white screen) if it's undefined.
@@ -412,6 +414,37 @@ export function mountChatRoutes(app) {
     // notification for devices that opted into chat:<slug>.
     broadcastChat(slug, { kind: "message", message });
     void maybePushChatNotification(slug, profile.display_name, trimmed, ownerId);
+  });
+
+  // Author-side edit: only works with matching token. Mirrors the DELETE
+  // auth model — opaque token in the body proves authorship without us
+  // having to map back to ownerId. POST verb (not PATCH) keeps the route
+  // inside the existing CORS allowlist (GET,POST,DELETE,OPTIONS).
+  app.post("/api/channels/:slug/messages/:id/edit", (req, res) => {
+    const slug = String(req.params.slug);
+    if (!VALID_CHANNEL_SLUGS.has(slug) && !parseDmSlug(slug) && !parseEventSlug(slug)) {
+      return res.status(404).json({ error: "unknown channel" });
+    }
+    const { token, body } = req.body || {};
+    if (!validOpaqueToken(token)) return res.status(400).json({ error: "bad token" });
+    if (typeof body !== "string") return res.status(400).json({ error: "body required" });
+    const trimmed = body.trim();
+    if (trimmed.length === 0) return res.status(400).json({ error: "empty body" });
+    if (trimmed.length > MESSAGE_MAX_CHARS) return res.status(400).json({ error: `body too long (max ${MESSAGE_MAX_CHARS})` });
+
+    const editedAt = new Date().toISOString().replace("T", " ").slice(0, 19);
+    const r = db.prepare(`
+      UPDATE channel_message
+         SET body = ?, edited_at = ?
+       WHERE id = ? AND channel_slug = ? AND author_token = ?
+    `).run(trimmed, editedAt, req.params.id, slug, token);
+    if (r.changes === 0) return res.status(404).json({ error: "not found or not yours" });
+
+    res.json({ ok: true, id: req.params.id, body: trimmed, editedAt });
+    // Edit events only carry the diffable fields. Reactions are
+    // per-viewer (the `mine` flag) so the broadcast skips them — clients
+    // patch their local message in place and keep their reactions intact.
+    broadcastChat(slug, { kind: "edit", id: req.params.id, body: trimmed, editedAt });
   });
 
   // ── Real-time: subscribe to one or more channels via SSE ──────

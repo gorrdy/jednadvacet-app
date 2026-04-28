@@ -694,7 +694,18 @@ export interface ChannelMessage {
   authorName: string;
   body: string;
   createdAt: string;
+  /** ISO timestamp of the last edit, or null for unedited messages. */
+  editedAt: string | null;
   reactions: MessageReaction[];
+}
+
+/** SSE payload for an in-place body edit. Reactions are per-viewer
+ *  (the `mine` flag) so the server doesn't ship them; clients patch
+ *  their own message and keep the local reaction state intact. */
+export interface ChannelEdit {
+  id: string;
+  body: string;
+  editedAt: string;
 }
 
 /** Allowlist sourced from shared/constants.js — single source of truth
@@ -753,6 +764,19 @@ export async function deleteChannelMessage(
 ): Promise<{ ok: boolean; error?: string }> {
   const r = await apiDelete(`/api/channels/${encodeURIComponent(slug)}/messages/${encodeURIComponent(id)}`, { token });
   return isApiError(r) ? { ok: false, error: r.error } : { ok: true };
+}
+
+export async function editChannelMessage(
+  slug: string,
+  id: string,
+  payload: { token: string; body: string },
+): Promise<{ ok: true; body: string; editedAt: string } | { ok: false; error: string }> {
+  const r = await apiPost<{ ok: true; id: string; body: string; editedAt: string }>(
+    `/api/channels/${encodeURIComponent(slug)}/messages/${encodeURIComponent(id)}/edit`,
+    payload,
+  );
+  if (isApiError(r)) return { ok: false, error: r.error };
+  return { ok: true, body: r.body, editedAt: r.editedAt };
 }
 
 export async function fetchChatProfile(ownerId: string): Promise<ChatProfile | null> {

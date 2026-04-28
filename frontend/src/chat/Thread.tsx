@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type FC } from "react";
-import { deleteChannelMessage, listChannelMessages, postChannelMessage, toggleMessageReaction, REACTION_EMOJIS, type ChannelMessage, type MessageReaction } from "../api";
+import { deleteChannelMessage, editChannelMessage, listChannelMessages, postChannelMessage, toggleMessageReaction, REACTION_EMOJIS, type ChannelEdit, type ChannelMessage, type MessageReaction } from "../api";
 import { MESSAGE_MAX_CHARS } from "../../../shared/constants.js";
 import { getOrCreateChatToken } from "../lib/chatIdentity";
 import { useChatProfile } from "../hooks/useChatProfile";
@@ -32,9 +32,15 @@ export const Thread: FC<Props> = ({ slug, label, onBack, onAuthorRequest }) => {
   const [sending, setSending] = useState(false);
   const [viewingProfile, setViewingProfile] = useState<string | null>(null);
   const [pickingFor, setPickingFor] = useState<string | null>(null);
+  // Per-message overflow menu (tří-tečka) and inline edit state. Only one
+  // menu / one edit at a time — opening a new one closes the previous.
+  const [menuFor, setMenuFor] = useState<string | null>(null);
+  const [editingFor, setEditingFor] = useState<string | null>(null);
+  const [editDraft, setEditDraft] = useState("");
+  const [savingEdit, setSavingEdit] = useState(false);
   const listRef = useRef<HTMLDivElement | null>(null);
 
-  // Per-device token (for delete auth) — never leaves localStorage.
+  // Per-device token (for delete / edit auth) — never leaves localStorage.
   const token = useRef(getOrCreateChatToken()).current;
   // Cross-device identity: nickname resolved from backend per-ownerId.
   const { profile, loading: profileLoading, ownerId } = useChatProfile();
@@ -67,14 +73,28 @@ export const Thread: FC<Props> = ({ slug, label, onBack, onAuthorRequest }) => {
     return () => { mounted = false; clearInterval(poll); };
   }, [slug, requiresOwner, ownerId]);
 
-  // Real-time fan-in via SSE. Appends new messages; dedupes by id so the
-  // fallback poll can't duplicate what we already streamed.
+  // Real-time fan-in via SSE. Both new messages and in-place edits flow
+  // through here — the message handler upserts (id-replace if present,
+  // append otherwise) so optimistic local state and SSE end up identical.
   const streamSlugs = useMemo(() => [slug], [slug]);
   const onStreamed = useCallback((m: ChannelMessage) => {
     if (m.channelSlug !== slug) return;
-    setMessages((prev) => prev.some((x) => x.id === m.id) ? prev : [...prev, m]);
+    setMessages((prev) => {
+      const idx = prev.findIndex((x) => x.id === m.id);
+      if (idx === -1) return [...prev, m];
+      const next = prev.slice();
+      next[idx] = m;
+      return next;
+    });
   }, [slug]);
-  useChannelStream(streamSlugs, onStreamed, requiresOwner ? ownerId : null);
+  const onEdited = useCallback((e: ChannelEdit) => {
+    // Patch only body + editedAt. Reactions aren't shipped on edit events
+    // (they're per-viewer); the local copy already has the right values.
+    setMessages((prev) => prev.map((m) =>
+      m.id === e.id ? { ...m, body: e.body, editedAt: e.editedAt } : m,
+    ));
+  }, []);
+  useChannelStream(streamSlugs, onStreamed, requiresOwner ? ownerId : null, onEdited);
 
   // Scroll to bottom on new messages. Wrapped in rAF so the layout can settle
   // first — important on iOS Safari, where setting `scrollTop` synchronously
@@ -87,6 +107,22 @@ export const Thread: FC<Props> = ({ slug, label, onBack, onAuthorRequest }) => {
     const raf = requestAnimationFrame(() => { el.scrollTop = el.scrollHeight; });
     return () => cancelAnimationFrame(raf);
   }, [messages.length]);
+
+  // Click outside any open menu/picker closes it. We also close on Escape
+  // for keyboard parity. The handler runs at the document level — each
+  // open menu's button stops propagation so its own click doesn't fall
+  // through and immediately re-close it.
+  useEffect(() => {
+    if (menuFor === null && pickingFor === null) return;
+    const close = () => { setMenuFor(null); setPickingFor(null); };
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") close(); };
+    document.addEventListener("click", close);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("click", close);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [menuFor, pickingFor]);
 
   const send = async () => {
     if (!profile || sending) return;
@@ -104,10 +140,9 @@ export const Thread: FC<Props> = ({ slug, label, onBack, onAuthorRequest }) => {
         );
         return;
       }
-      // Optimistic append with id-dedupe — SSE can race us and deliver the
+      // Optimistic upsert with id-dedupe — SSE can race us and deliver the
       // same message back before React flushes our state. Both paths use
-      // `some(x.id === m.id)` guarding; whichever wins, we end up with one
-      // copy. Previously this branch blindly pushed → duplicate rows.
+      // the upsert pattern; whichever wins we end up with one copy.
       setMessages((prev) => prev.some((x) => x.id === r.message.id) ? prev : [...prev, r.message]);
       setDraft("");
     } catch (e) {
@@ -125,26 +160,29 @@ export const Thread: FC<Props> = ({ slug, label, onBack, onAuthorRequest }) => {
     setMessages((prev) => prev.filter((x) => x.id !== m.id));
   };
 
-  // Long-press to delete own messages (replaces the previous "X" hover button).
-  // 550 ms feels like a deliberate hold, not a tap. We watch pointerdown and
-  // cancel on up/leave/cancel — pointercancel fires on iOS when scrolling
-  // begins, so vertical scrolling through history won't trigger deletion.
-  const pressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const cancelPress = useCallback(() => {
-    if (pressTimerRef.current) {
-      clearTimeout(pressTimerRef.current);
-      pressTimerRef.current = null;
+  const beginEdit = (m: ChannelMessage) => {
+    setEditingFor(m.id);
+    setEditDraft(m.body);
+    setMenuFor(null);
+  };
+  const cancelEdit = () => { setEditingFor(null); setEditDraft(""); };
+  const saveEdit = async (m: ChannelMessage) => {
+    if (m.authorToken !== token || savingEdit) return;
+    const trimmed = editDraft.trim();
+    if (!trimmed) { cancelEdit(); return; }
+    if (trimmed === m.body) { cancelEdit(); return; }
+    setSavingEdit(true);
+    try {
+      const r = await editChannelMessage(slug, m.id, { token, body: trimmed });
+      if (!r.ok) { alert(r.error ?? "Úprava selhala."); return; }
+      setMessages((prev) => prev.map((x) =>
+        x.id === m.id ? { ...x, body: r.body, editedAt: r.editedAt } : x,
+      ));
+      cancelEdit();
+    } finally {
+      setSavingEdit(false);
     }
-  }, []);
-  const startPress = useCallback((m: ChannelMessage) => {
-    cancelPress();
-    pressTimerRef.current = setTimeout(() => {
-      pressTimerRef.current = null;
-      void removeOwn(m);
-    }, 550);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cancelPress]);
-  useEffect(() => () => cancelPress(), [cancelPress]);
+  };
 
   // Toggle a reaction. Optimistic — the SSE path doesn't broadcast
   // reaction events yet (followup), so we update local state in place
@@ -181,6 +219,64 @@ export const Thread: FC<Props> = ({ slug, label, onBack, onAuthorRequest }) => {
   // the previous message in the same thread. Within a tight burst from the
   // same author the messages stack tightly, indented under the avatar gutter.
   const AUTHOR_GROUP_GAP_MS = 7 * 60_000;
+
+  // The bubble + (own-only) overflow-menu button + edit-mode textarea live
+  // in one place so head-row and continuation-row don't drift apart.
+  const renderBubble = (m: ChannelMessage, mine: boolean) => {
+    const isEditing = editingFor === m.id;
+    if (isEditing) {
+      return (
+        <div className="chat-bubble chat-bubble-editing">
+          <textarea
+            className="chat-edit-input"
+            value={editDraft}
+            autoFocus
+            maxLength={MESSAGE_MAX_CHARS}
+            onChange={(e) => setEditDraft(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); void saveEdit(m); }
+              if (e.key === "Escape") { e.preventDefault(); cancelEdit(); }
+            }}
+          />
+          <div className="chat-edit-actions">
+            <button type="button" className="btn small" onClick={cancelEdit} disabled={savingEdit}>Zrušit</button>
+            <button type="button" className="btn small primary" onClick={() => void saveEdit(m)} disabled={savingEdit || !editDraft.trim()}>
+              {savingEdit ? "Ukládám…" : "Uložit"}
+            </button>
+          </div>
+        </div>
+      );
+    }
+    return (
+      <div className="chat-bubble">
+        {m.body}
+        {m.editedAt && <span className="chat-edited-tag" title={`Upraveno ${formatRelative(m.editedAt)}`}>(upraveno)</span>}
+        {mine && (
+          <div className="chat-msg-actions" onClick={(e) => e.stopPropagation()}>
+            <button
+              type="button"
+              className="chat-msg-menu-btn"
+              onClick={() => setMenuFor((id) => id === m.id ? null : m.id)}
+              aria-label="Možnosti zprávy"
+              title="Možnosti"
+            >
+              ⋯
+            </button>
+            {menuFor === m.id && (
+              <div className="chat-msg-menu" role="menu">
+                <button type="button" role="menuitem" className="chat-msg-menu-item" onClick={() => beginEdit(m)}>
+                  Upravit
+                </button>
+                <button type="button" role="menuitem" className="chat-msg-menu-item danger" onClick={() => { setMenuFor(null); void removeOwn(m); }}>
+                  Smazat
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  };
 
   return (
     <div className="chat-thread">
@@ -224,6 +320,9 @@ export const Thread: FC<Props> = ({ slug, label, onBack, onAuthorRequest }) => {
             const avatar = authorProfile?.avatar ?? null;
             const name = authorProfile?.displayName ?? m.authorName;
             const tier = authorProfile?.tier ?? 1;
+            const hasReactions = (m.reactions?.length ?? 0) > 0;
+            const showReactRow = hasReactions || pickingFor === m.id;
+            const canReact = !!ownerId && !!profile && editingFor !== m.id;
             return (
               <div
                 key={m.id}
@@ -251,61 +350,41 @@ export const Thread: FC<Props> = ({ slug, label, onBack, onAuthorRequest }) => {
                         )}
                         <span className="chat-msg-time" title={formatRelative(m.createdAt)}>{formatTime(m.createdAt)}</span>
                       </div>
-                      <div
-                        className={`chat-bubble ${mine ? "chat-bubble-mine" : ""}`}
-                        onPointerDown={mine ? () => startPress(m) : undefined}
-                        onPointerUp={mine ? cancelPress : undefined}
-                        onPointerLeave={mine ? cancelPress : undefined}
-                        onPointerCancel={mine ? cancelPress : undefined}
-                        onContextMenu={mine ? (e) => e.preventDefault() : undefined}
-                        title={mine ? "Podržte pro smazání" : undefined}
-                      >
-                        {m.body}
-                        {ownerId && profile && (
-                          <button
-                            type="button"
-                            className="chat-react-btn"
-                            onClick={() => setPickingFor((p) => p === m.id ? null : m.id)}
-                            title="Reakce"
-                            aria-label="Přidat reakci"
-                          >
-                            🙂+
-                          </button>
-                        )}
-                      </div>
+                      {renderBubble(m, mine)}
+                      {canReact && !showReactRow && (
+                        <button
+                          type="button"
+                          className="reaction-add-btn floating"
+                          onClick={(e) => { e.stopPropagation(); setPickingFor(m.id); }}
+                          aria-label="Přidat reakci"
+                          title="Přidat reakci"
+                        >
+                          🙂+
+                        </button>
+                      )}
                     </div>
                   </div>
                 ) : (
                   <div className="chat-msg-row chat-msg-row-cont">
                     <span className="chat-msg-time-gutter" aria-hidden="true">{formatTime(m.createdAt)}</span>
                     <div className="chat-msg-body">
-                      <div
-                        className={`chat-bubble ${mine ? "chat-bubble-mine" : ""}`}
-                        onPointerDown={mine ? () => startPress(m) : undefined}
-                        onPointerUp={mine ? cancelPress : undefined}
-                        onPointerLeave={mine ? cancelPress : undefined}
-                        onPointerCancel={mine ? cancelPress : undefined}
-                        onContextMenu={mine ? (e) => e.preventDefault() : undefined}
-                        title={mine ? "Podržte pro smazání" : undefined}
-                      >
-                        {m.body}
-                        {ownerId && profile && (
-                          <button
-                            type="button"
-                            className="chat-react-btn"
-                            onClick={() => setPickingFor((p) => p === m.id ? null : m.id)}
-                            title="Reakce"
-                            aria-label="Přidat reakci"
-                          >
-                            🙂+
-                          </button>
-                        )}
-                      </div>
+                      {renderBubble(m, mine)}
+                      {canReact && !showReactRow && (
+                        <button
+                          type="button"
+                          className="reaction-add-btn floating"
+                          onClick={(e) => { e.stopPropagation(); setPickingFor(m.id); }}
+                          aria-label="Přidat reakci"
+                          title="Přidat reakci"
+                        >
+                          🙂+
+                        </button>
+                      )}
                     </div>
                   </div>
                 )}
 
-                {((m.reactions?.length ?? 0) > 0 || pickingFor === m.id) && (
+                {showReactRow && editingFor !== m.id && (
                   <div className="chat-reactions">
                     {(m.reactions ?? []).map((r) => (
                       <button
@@ -318,8 +397,19 @@ export const Thread: FC<Props> = ({ slug, label, onBack, onAuthorRequest }) => {
                         {r.emoji} <span className="count">{r.count}</span>
                       </button>
                     ))}
+                    {canReact && pickingFor !== m.id && (
+                      <button
+                        type="button"
+                        className="reaction-add-btn"
+                        onClick={(e) => { e.stopPropagation(); setPickingFor((p) => p === m.id ? null : m.id); }}
+                        aria-label="Přidat reakci"
+                        title="Přidat reakci"
+                      >
+                        🙂+
+                      </button>
+                    )}
                     {pickingFor === m.id && (
-                      <div className="reaction-picker">
+                      <div className="reaction-picker" onClick={(e) => e.stopPropagation()}>
                         {REACTION_EMOJIS.map((e) => (
                           <button
                             key={e}
