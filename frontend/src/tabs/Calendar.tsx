@@ -17,16 +17,7 @@ import { fetchTierState } from "../lib/tierSystem";
 
 type Status = "going" | "maybe" | "not_going";
 
-// Recurring ICS events land as separate rows with IDs like
-// `ics-<uid>-YYYY-MM-DD` per instance. Group them so the calendar doesn't
-// get drowned by 50 weekly meetups of the same series; we only show the
-// first two upcoming instances per series by default.
-const ICS_INSTANCE_RE = /^(ics-.+)-\d{4}-\d{2}-\d{2}$/;
-function seriesKey(id: string): string {
-  const m = id.match(ICS_INSTANCE_RE);
-  return m ? m[1] : id;
-}
-const SERIES_HEAD = 2;
+import { foldRecurringSeries } from "../lib/eventSeries";
 
 export const CalendarTab: FC = () => {
   const owner = use(evolu.appOwner);
@@ -221,29 +212,10 @@ export const CalendarTab: FC = () => {
       ) : (
         <div>
           {(() => {
-            // Count instances per series so we can render a "show more"
-            // affordance only when the series is actually recurring. For
-            // "past" scope we don't fold — users usually want the full
-            // timeline there.
-            // Hard cap per series: show only the SERIES_HEAD nearest
-            // upcoming instances. Past view keeps the full timeline so users
-            // can scroll back through history.
-            const seen = new Map<string, number>();
-            const output: Array<{ kind: "event"; ev: GlobalEvent }> = [];
-            const shouldFold = scope !== "past";
-
-            for (const ev of filtered) {
-              const key = seriesKey(ev.id);
-              const idx = (seen.get(key) ?? 0);
-              seen.set(key, idx + 1);
-              if (!shouldFold || idx < SERIES_HEAD) {
-                output.push({ kind: "event", ev });
-              }
-              // idx >= SERIES_HEAD: drop — UX preference: noise-free feed.
-            }
-
-            return output.map((item) => {
-              const ev = item.ev;
+            // Past scope keeps the full timeline; future scopes fold ICS
+            // recurrences to the next two upcoming instances per series.
+            const folded = foldRecurringSeries(filtered, { fold: scope !== "past" });
+            return folded.map((ev) => {
               const start = formatEventDateBlock(ev.startsAt);
               const ov = overrideMap.get(ev.id);
               return (
