@@ -8,14 +8,13 @@
 // The melt step reuses the same `meltToInvoice` path the manual Melt
 // view uses, so transaction history shape is identical.
 
-import { useEffect, useMemo, useState, type FC } from "react";
+import { useMemo, useState, type FC } from "react";
 import { useCashu } from "../hooks/useCashu";
+import { useLnurlFlow } from "../hooks/useLnurlFlow";
 import {
-  fetchLnurlSpec,
   fetchLnurlPayInvoice,
   parseLnurlPayMetadata,
   verifyLnurlPayInvoice,
-  type LnurlPaySpec,
   type LnurlSuccessAction,
 } from "../lib/lnurl";
 import { ErrorBox } from "../components/ErrorBox";
@@ -31,8 +30,7 @@ export const LnurlPayView: FC<Props> = ({ url, onBack }) => {
   const cashu = useCashu();
   const mintUrl = cashu.activeMintUrl;
 
-  const [spec, setSpec] = useState<LnurlPaySpec | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { spec, loading, err: specErr } = useLnurlFlow(url, "payRequest");
   const [err, setErr] = useState<string | null>(null);
   const [amount, setAmount] = useState<string>("");
   const [comment, setComment] = useState<string>("");
@@ -40,31 +38,14 @@ export const LnurlPayView: FC<Props> = ({ url, onBack }) => {
   const [paid, setPaid] = useState<{ amount: number; fee: number } | null>(null);
   const [successAction, setSuccessAction] = useState<LnurlSuccessAction | null>(null);
 
-  useEffect(() => {
-    let mounted = true;
-    void fetchLnurlSpec(url)
-      .then((s) => {
-        if (!mounted) return;
-        if (s.tag !== "payRequest") {
-          setErr(`Tento LNURL je typu ${s.tag}, ne payRequest. Použij QR scan z hlavní obrazovky.`);
-          setLoading(false);
-          return;
-        }
-        setSpec(s);
-        // Default amount = minSendable (smallest button-press flow).
-        // Many services have min = max (fixed price) or a single
-        // commonly-paid amount worth pre-filling.
-        const minSats = Math.floor(s.minSendable / 1000);
-        setAmount(String(minSats));
-        setLoading(false);
-      })
-      .catch((e: Error) => {
-        if (!mounted) return;
-        setErr(e.message ?? "LNURL fetch selhal");
-        setLoading(false);
-      });
-    return () => { mounted = false; };
-  }, [url]);
+  // Pre-fill the amount with minSendable once the spec lands. Many
+  // services have min === max (fixed price), so this is also the final
+  // value most users submit.
+  useMemo(() => {
+    if (spec && !amount) {
+      setAmount(String(Math.floor(spec.minSendable / 1000)));
+    }
+  }, [spec, amount]);
 
   const meta = useMemo(() => spec ? parseLnurlPayMetadata(spec.metadata) : null, [spec]);
   const minSats = spec ? Math.floor(spec.minSendable / 1000) : 0;
@@ -121,7 +102,7 @@ export const LnurlPayView: FC<Props> = ({ url, onBack }) => {
         <WalletHeader onBack={onBack} title="LNURL platba" />
         <div className="card">
           <h3>LNURL nešel načíst</h3>
-          <ErrorBox message={err ?? "Neznámá chyba."} />
+          <ErrorBox message={specErr ?? "Neznámá chyba."} />
           <button className="btn btn-secondary mt-md" onClick={onBack}>Zpět</button>
         </div>
       </div>
