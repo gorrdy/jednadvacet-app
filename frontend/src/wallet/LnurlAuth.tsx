@@ -11,6 +11,7 @@ import { use, useState, type FC } from "react";
 import { evolu } from "../evolu";
 import { buildAuthResponse } from "../lib/lnurlAuth";
 import { maybeProxyLnurl, type LnurlAuthParams } from "../lib/lnurl";
+import { ErrorBox } from "../components/ErrorBox";
 import { WalletHeader } from "./shared";
 
 interface Props {
@@ -79,7 +80,7 @@ export const LnurlAuthView: FC<Props> = ({ params, onBack }) => {
           Tvoje peněženka podepíše challenge unikátním klíčem pro tuto doménu.
           Žádné sats se nepřesouvají.
         </p>
-        {err && <p className="error small">{err}</p>}
+        <ErrorBox message={err} small />
         <div className="row-actions mt-md">
           <button
             className="btn btn-primary"

@@ -16,6 +16,8 @@
 import { useEffect, useRef, useState, type FC } from "react";
 import { useCashu } from "../hooks/useCashu";
 import { fetchLnurlWithdrawSpec, submitLnurlInvoice, type LnurlWithdrawSpec } from "../lib/lnurl";
+import { ErrorBox } from "../components/ErrorBox";
+import { LoadingSpinner } from "../components/LoadingSpinner";
 import { WalletHeader } from "./shared";
 
 interface Props {
@@ -117,7 +119,7 @@ export const LnurlWithdrawView: FC<Props> = ({ url, onBack, preloadedSpec }) => 
     return (
       <div>
         <WalletHeader onBack={onBack} title="LNURL výběr" />
-        <div className="loading">Načítám LNURL službu…</div>
+        <LoadingSpinner label="Načítám LNURL službu…" />
       </div>
     );
   }
@@ -128,7 +130,7 @@ export const LnurlWithdrawView: FC<Props> = ({ url, onBack, preloadedSpec }) => 
         <WalletHeader onBack={onBack} title="LNURL výběr" />
         <div className="card">
           <h3>LNURL nešel načíst</h3>
-          <p className="error">{err ?? "Neznámá chyba."}</p>
+          <ErrorBox message={err ?? "Neznámá chyba."} />
           <button className="btn btn-secondary mt-md" onClick={onBack}>Zpět</button>
         </div>
       </div>
@@ -196,9 +198,9 @@ export const LnurlWithdrawView: FC<Props> = ({ url, onBack, preloadedSpec }) => 
               max={maxSats}
             />
           </div>
-          {err && <p className="error small">{err}</p>}
+          <ErrorBox message={err} small />
           {!mintUrl && (
-            <p className="error small">Nemáš aktivní mint. Otevři Peněženka → Nastavení mintu.</p>
+            <ErrorBox message="Nemáš aktivní mint. Otevři Peněženka → Nastavení mintu." small />
           )}
           <div className="row-actions mt-md">
             <button

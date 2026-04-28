@@ -11,6 +11,7 @@ import { reconcileRsvps, syncRsvp } from "../lib/rsvpSync";
 import { formatEventDateBlock, formatEventRange } from "../lib/fmt";
 import { IconCheck, IconCity, IconClock, IconExternal, IconPin, IconQuestion, IconX } from "../components/Icons";
 import { AttendeeListModal } from "../components/AttendeeListModal";
+import { LoadingSpinner } from "../components/LoadingSpinner";
 import { ProposeEventModal } from "../components/ProposeEventModal";
 import { fetchTierState } from "../lib/tierSystem";
 
@@ -143,7 +144,7 @@ export const CalendarTab: FC = () => {
     );
   }, [overrides]);
 
-  if (loading) return <div className="loading">Načítám akce…</div>;
+  if (loading) return <LoadingSpinner label="Načítám akce…" />;
 
   const upcomingCount = events.filter((e) => new Date(e.endsAt).getTime() >= now).length;
 

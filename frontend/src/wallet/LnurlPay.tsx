@@ -18,6 +18,8 @@ import {
   type LnurlPaySpec,
   type LnurlSuccessAction,
 } from "../lib/lnurl";
+import { ErrorBox } from "../components/ErrorBox";
+import { LoadingSpinner } from "../components/LoadingSpinner";
 import { WalletHeader } from "./shared";
 
 interface Props {
@@ -108,7 +110,7 @@ export const LnurlPayView: FC<Props> = ({ url, onBack }) => {
     return (
       <div>
         <WalletHeader onBack={onBack} title="LNURL platba" />
-        <div className="loading">Načítám LNURL službu…</div>
+        <LoadingSpinner label="Načítám LNURL službu…" />
       </div>
     );
   }
@@ -119,7 +121,7 @@ export const LnurlPayView: FC<Props> = ({ url, onBack }) => {
         <WalletHeader onBack={onBack} title="LNURL platba" />
         <div className="card">
           <h3>LNURL nešel načíst</h3>
-          <p className="error">{err ?? "Neznámá chyba."}</p>
+          <ErrorBox message={err ?? "Neznámá chyba."} />
           <button className="btn btn-secondary mt-md" onClick={onBack}>Zpět</button>
         </div>
       </div>
@@ -194,9 +196,9 @@ export const LnurlPayView: FC<Props> = ({ url, onBack }) => {
               />
             </div>
           )}
-          {err && <p className="error small">{err}</p>}
+          <ErrorBox message={err} small />
           {!mintUrl && (
-            <p className="error small">Nemáš aktivní mint. Otevři Peněženka → Nastavení mintu.</p>
+            <ErrorBox message="Nemáš aktivní mint. Otevři Peněženka → Nastavení mintu." small />
           )}
           <div className="row-actions mt-md">
             <button

@@ -7,6 +7,7 @@ import { useChatProfileMap } from "../hooks/useChatProfileMap";
 import { useChannelStream } from "../hooks/useChannelStream";
 import { formatRelative, formatTime } from "../lib/fmt";
 import { Avatar } from "../components/Avatar";
+import { LoadingSpinner } from "../components/LoadingSpinner";
 import { IconX } from "../components/Icons";
 import { UserProfileModal } from "../components/UserProfileModal";
 
@@ -184,7 +185,7 @@ export const Thread: FC<Props> = ({ slug, label, onBack, onAuthorRequest }) => {
 
       <div className="chat-list" ref={listRef}>
         {loading ? (
-          <div className="loading">Načítám zprávy…</div>
+          <LoadingSpinner label="Načítám zprávy…" />
         ) : messages.length === 0 ? (
           <div className="empty-state" style={{ padding: "2rem 0" }}>
             <div className="glyph">ZATÍM TICHO</div>

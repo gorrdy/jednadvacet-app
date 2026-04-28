@@ -15,6 +15,8 @@ import {
   type LnurlAuthParams,
   type LnurlWithdrawSpec,
 } from "../lib/lnurl";
+import { ErrorBox } from "../components/ErrorBox";
+import { LoadingSpinner } from "../components/LoadingSpinner";
 import { LnurlPayView } from "./LnurlPay";
 import { LnurlWithdrawView } from "./LnurlWithdraw";
 import { LnurlAuthView } from "./LnurlAuth";
@@ -56,7 +58,7 @@ export const LnurlRouterView: FC<{ url: string; onBack: () => void }> = ({ url, 
         <WalletHeader onBack={onBack} title="LNURL" />
         <div className="card">
           <h3>LNURL nešel načíst</h3>
-          <p className="error">{err}</p>
+          <ErrorBox message={err} />
           <button className="btn btn-secondary mt-md" onClick={onBack}>Zpět</button>
         </div>
       </div>
@@ -67,7 +69,7 @@ export const LnurlRouterView: FC<{ url: string; onBack: () => void }> = ({ url, 
     return (
       <div>
         <WalletHeader onBack={onBack} title="LNURL" />
-        <div className="loading">Načítám LNURL službu…</div>
+        <LoadingSpinner label="Načítám LNURL službu…" />
       </div>
     );
   }
