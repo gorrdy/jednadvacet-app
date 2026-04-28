@@ -697,9 +697,9 @@ export interface ChannelMessage {
   reactions: MessageReaction[];
 }
 
-/** Allowlist mirrors backend ALLOWED_REACTIONS in routes/public.js.
- *  Keep in sync — server rejects emoji outside this set. */
-export const REACTION_EMOJIS = ["👍", "❤️", "😂", "🔥", "👀", "😮", "🙏", "🚀"] as const;
+/** Allowlist sourced from shared/constants.js — single source of truth
+ *  shared with the backend's REACTIONS validator. */
+export { REACTIONS as REACTION_EMOJIS } from "../../shared/constants.js";
 
 export async function toggleMessageReaction(
   messageId: string, ownerId: string, emoji: string, op: "add" | "remove",

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type FC } from "react";
 import { deleteChannelMessage, listChannelMessages, postChannelMessage, toggleMessageReaction, REACTION_EMOJIS, type ChannelMessage, type MessageReaction } from "../api";
+import { MESSAGE_MAX_CHARS } from "../../../shared/constants.js";
 import { getOrCreateChatToken } from "../lib/chatIdentity";
 import { useChatProfile } from "../hooks/useChatProfile";
 import { useChatProfileMap } from "../hooks/useChatProfileMap";
@@ -325,7 +326,7 @@ export const Thread: FC<Props> = ({ slug, label, onBack, onAuthorRequest }) => {
             onChange={(e) => { setDraft(e.target.value); setErr(null); }}
             placeholder={needsNickname ? "Nejdřív si nastav přezdívku v Moje…" : `Napiš zprávu v ${label}`}
             disabled={needsNickname}
-            maxLength={2000}
+            maxLength={MESSAGE_MAX_CHARS}
             onKeyDown={(e) => {
               if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); void send(); }
             }}
