@@ -1,18 +1,14 @@
-import { useEffect, useState, type FC } from "react";
-import { adminStats, type AdminStats } from "../../api";
+import { type FC } from "react";
+import { adminStats } from "../../api";
+import { useAsync } from "../../hooks/useAsync";
+import { ErrorBox } from "../../components/ErrorBox";
+import { LoadingSpinner } from "../../components/LoadingSpinner";
 
 export const StatsView: FC<{ token: string }> = ({ token }) => {
-  const [stats, setStats] = useState<AdminStats | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { data: stats, loading } = useAsync(() => adminStats(token), [token]);
 
-  useEffect(() => {
-    let mounted = true;
-    adminStats(token).then((s) => { if (mounted) { setStats(s); setLoading(false); } });
-    return () => { mounted = false; };
-  }, [token]);
-
-  if (loading) return <div className="loading">Načítám…</div>;
-  if (!stats) return <p className="error">Statistiky nelze načíst.</p>;
+  if (loading) return <LoadingSpinner />;
+  if (!stats) return <ErrorBox message="Statistiky nelze načíst." />;
 
   const tagEntries = Object.entries(stats.byTag).sort((a, b) => b[1] - a[1]);
   const sources = stats.bySource ?? {};

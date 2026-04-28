@@ -1,22 +1,14 @@
-import { useEffect, useState, type FC } from "react";
+import { useState, type FC } from "react";
 import { adminFireReminders, adminRemindersUpcoming, type ReminderUpcoming } from "../../api";
 import { formatDateTime, formatRelative } from "../../lib/fmt";
+import { useAsync } from "../../hooks/useAsync";
+import { ErrorBox } from "../../components/ErrorBox";
+import { LoadingSpinner } from "../../components/LoadingSpinner";
 
 export const RemindersView: FC<{ token: string }> = ({ token }) => {
-  const [data, setData] = useState<ReminderUpcoming | null>(null);
-  const [loading, setLoading] = useState(true);
   const [firing, setFiring] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
-
-  useEffect(() => {
-    let mounted = true;
-    adminRemindersUpcoming(token).then((d) => {
-      if (!mounted) return;
-      setData(d);
-      setLoading(false);
-    });
-    return () => { mounted = false; };
-  }, [token, reloadKey]);
+  const { data, loading } = useAsync(() => adminRemindersUpcoming(token), [token, reloadKey]);
 
   const fire = async () => {
     if (!window.confirm(
@@ -30,8 +22,8 @@ export const RemindersView: FC<{ token: string }> = ({ token }) => {
     setReloadKey((k) => k + 1);
   };
 
-  if (loading) return <div className="loading">Načítám…</div>;
-  if (!data) return <p className="error">Nelze načíst.</p>;
+  if (loading) return <LoadingSpinner />;
+  if (!data) return <ErrorBox message="Nelze načíst." />;
 
   const { preview, history } = data;
   const recipientsTotal = preview.channels.reduce((n, c) => n + c.recipientCount, 0);
