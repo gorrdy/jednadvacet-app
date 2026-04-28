@@ -1,153 +1,32 @@
-// LNURL helpers for the wallet. Implements:
-//   • LUD-01 — bech32 LNURL encoding (decoder inlined below)
+// LNURL spec helpers for the wallet. Implements:
+//   • LUD-01 — bech32 LNURL encoding (codec lives in lnurlCodec.ts)
 //   • LUD-03 — withdrawRequest (faucets, vouchers — wallet pulls funds in)
 //   • LUD-06 — payRequest (wallet pays a remote service)
 //   • LUD-09 — successAction in pay response (message / url / aes — aes
 //              is parsed but not decrypted; we surface the encrypted
 //              blob so a future LUD-10 implementation can drop in)
 //   • LUD-12 — comment field in payRequest
-//   • LUD-16 — Lightning Address (user@domain.com → LUD-06 endpoint)
-//   • LUD-17 — protocol scheme prefixes (`lnurlp:`, `lnurlw:`, etc.)
+//   • LUD-16 — Lightning Address (handled in lnurlCodec.ts)
+//   • LUD-17 — protocol scheme prefixes (handled in lnurlCodec.ts)
 //
 // Out of scope (yet): LUD-04 auth, LUD-08 fast withdraw, LUD-10 aes
 // decryption, LUD-11 disposable, LUD-14/15 balance check / notify,
 // LUD-18 payer identity, LUD-19 discoverability, LUD-20 long desc,
 // LUD-21 verify.
-//
-// Bech32 decoder is inlined (~50 lines) — pulling a dep just for this
-// would be silly. Reference: BIP-173.
 
 import { sha256 } from "@noble/hashes/sha2.js";
+import { BECH32_CHARSET, decodeLnurl, from5to8 } from "./lnurlCodec";
 
-const CHARSET = "qpzry9x8gf2tvdw0s3jn54khce6mua7l";
-
-function bech32Polymod(values: number[]): number {
-  const GEN = [0x3b6a57b2, 0x26508e6d, 0x1ea119fa, 0x3d4233dd, 0x2a1462b3];
-  let chk = 1;
-  for (const v of values) {
-    const top = chk >> 25;
-    chk = ((chk & 0x1ffffff) << 5) ^ v;
-    for (let i = 0; i < 5; i++) {
-      if ((top >> i) & 1) chk ^= GEN[i];
-    }
-  }
-  return chk;
-}
-
-function bech32HrpExpand(hrp: string): number[] {
-  const out: number[] = [];
-  for (let i = 0; i < hrp.length; i++) out.push(hrp.charCodeAt(i) >> 5);
-  out.push(0);
-  for (let i = 0; i < hrp.length; i++) out.push(hrp.charCodeAt(i) & 31);
-  return out;
-}
-
-function bech32VerifyChecksum(hrp: string, data: number[]): boolean {
-  return bech32Polymod(bech32HrpExpand(hrp).concat(data)) === 1;
-}
-
-function from5to8(words: number[]): Uint8Array | null {
-  let acc = 0;
-  let bits = 0;
-  const out: number[] = [];
-  for (const w of words) {
-    if (w < 0 || w >> 5) return null;
-    acc = ((acc << 5) | w) & 0xfffff;
-    bits += 5;
-    while (bits >= 8) {
-      bits -= 8;
-      out.push((acc >> bits) & 0xff);
-    }
-  }
-  if (bits >= 5 || (acc & ((1 << bits) - 1))) return null;
-  return new Uint8Array(out);
-}
-
-/** Decode a bech32 LNURL (case-insensitive) → URL string. Throws on bad input. */
-export function decodeLnurl(input: string): string {
-  const lower = input.toLowerCase();
-  const sep = lower.lastIndexOf("1");
-  if (sep < 1 || sep + 7 > lower.length) throw new Error("Špatný LNURL");
-  const hrp = lower.slice(0, sep);
-  if (hrp !== "lnurl") throw new Error("Neznámý LNURL prefix");
-  const data: number[] = [];
-  for (let i = sep + 1; i < lower.length; i++) {
-    const idx = CHARSET.indexOf(lower.charAt(i));
-    if (idx === -1) throw new Error("Špatný LNURL znak");
-    data.push(idx);
-  }
-  if (!bech32VerifyChecksum(hrp, data)) throw new Error("LNURL checksum");
-  const bytes = from5to8(data.slice(0, -6));
-  if (!bytes) throw new Error("LNURL data");
-  return new TextDecoder().decode(bytes);
-}
-
-/** Detect if a scanned/pasted string looks like an LNURL (bech32 form, a
- *  LUD-17 `lnurlp:` / `lnurlw:` / `lnurla:` URI, or a `https://...` URL
- *  pointing to an LNURL endpoint). The latter only qualifies after we
- *  successfully fetch and see a known `tag`, but we accept https URLs as
- *  candidates here so the user can still try pasted links. */
-export function isLnurlCandidate(s: string): boolean {
-  const trimmed = stripUriScheme(s.trim());
-  if (/^lnurl1[a-z0-9]+$/i.test(trimmed)) return true;
-  if (/^https?:\/\/\S+$/i.test(trimmed)) return true;
-  return false;
-}
-
-/** Strip recognised URI scheme prefixes. Handles `lightning:` /
- *  `lightning://` (any number of slashes), nested wrappers like
- *  `lightning:lnurl:lnurl1…`, LUD-17 schemes (`lnurlp:`, `lnurlw:`,
- *  `lnurla:`, `keyauth:` — with optional `//`), and the legacy bare
- *  `lnurl:` prefix. After stripping, the result is either a bech32
- *  `lnurl1…`, an https URL, or (for LUD-17 schemes that contained just
- *  a host+path) we coerce the scheme to https — LUD-17 says http is
- *  only valid for clearnet localhost / .onion. */
-function stripUriScheme(s: string): string {
-  let r = s.trim();
-  // Loop a few times to unwrap nested wrappers — cheap, cap at 4 to
-  // avoid pathological inputs spinning forever.
-  for (let i = 0; i < 4; i++) {
-    // LUD-17: lnurl(p|w|a|c)? / keyauth → conversion to https. We
-    // handle this branch first because if it matches, we want to
-    // *return* the converted URL, not just strip the prefix.
-    const lud17 = r.match(/^(lnurl[pwac]?|keyauth):(\/{0,2})(.+)$/i);
-    if (lud17) {
-      const rest = lud17[3].trim();
-      if (/^https?:\/\//i.test(rest)) return rest;
-      if (/^lnurl1[a-z0-9]+$/i.test(rest)) return rest;
-      return `https://${rest}`;
-    }
-    // Plain wrapper schemes: drop the prefix and continue (might be
-    // nested under another).
-    const wrap = r.match(/^(lightning|bitcoin|cashu|lnurl):\/{0,2}/i);
-    if (!wrap) break;
-    r = r.slice(wrap[0].length).trim();
-  }
-  return r;
-}
-
-/** Coerce a scanned string to its underlying LNURL service URL. Accepts
- *  bech32 lnurl1…, LUD-17 schemes, or plain https URLs. */
-export function lnurlServiceUrl(s: string): string {
-  const trimmed = stripUriScheme(s.trim());
-  if (/^lnurl1[a-z0-9]+$/i.test(trimmed)) return decodeLnurl(trimmed);
-  return trimmed;
-}
-
-/** Lightning Address (LUD-16) `name@domain` → `.well-known/lnurlp/<name>`
- *  URL that returns a payRequest spec. We accept addresses with the same
- *  rules as RFC 5321 local-part (loosely) — letters/digits and `._%+-`. */
-export function isLightningAddress(s: string): boolean {
-  return /^[a-z0-9._%+-]{1,64}@[a-z0-9.-]+\.[a-z]{2,}$/i.test(s.trim());
-}
-
-export function lightningAddressToUrl(addr: string): string {
-  const [name, domain] = addr.trim().toLowerCase().split("@");
-  if (!name || !domain) throw new Error("Špatná Lightning Address");
-  // .onion / localhost stay http per LUD-17, everything else https.
-  const scheme = domain.endsWith(".onion") || domain === "localhost" ? "http" : "https";
-  return `${scheme}://${domain}/.well-known/lnurlp/${encodeURIComponent(name)}`;
-}
+// Re-export codec helpers so existing call sites that import from
+// `./lnurl` keep working without changes.
+export {
+  decodeLnurl,
+  isLnurlCandidate,
+  lnurlServiceUrl,
+  isLightningAddress,
+  lightningAddressToUrl,
+  stripUriScheme,
+} from "./lnurlCodec";
 
 export interface LnurlWithdrawSpec {
   tag: "withdrawRequest";
@@ -443,7 +322,7 @@ function bolt11DescriptionHash(invoice: string): Uint8Array | null {
   if (sep < 4) return null;
   const data: number[] = [];
   for (let i = sep + 1; i < lower.length; i++) {
-    const idx = CHARSET.indexOf(lower.charAt(i));
+    const idx = BECH32_CHARSET.indexOf(lower.charAt(i));
     if (idx === -1) return null;
     data.push(idx);
   }
