@@ -7,6 +7,7 @@
 // and confirming the request. Once both sides accept, the server exposes a
 // `dm:<A>:<B>` channel that the Thread component can render like any other.
 
+import { parseDmSlug, parseEventSlug } from "../../../shared/slugs.js";
 import { useCallback, useEffect, useMemo, useRef, useState, type FC } from "react";
 import { use } from "react";
 import { evolu } from "../evolu";
@@ -156,16 +157,18 @@ export const Messages: FC<Props> = ({ deepLinkSlug, onDeepLinkConsumed }) => {
   }, [selfOwnerId, refreshDm]);
 
   // Deep-link from push notification: `#chat/<slug>`. For DM slugs we also
-  // need to resolve partner info from the loaded contacts list.
+  // need to resolve partner info from the loaded contacts list. Strict
+  // shared parsers reject malformed slugs so a hostile push payload can't
+  // wedge the chat tab into an unreachable state.
   useEffect(() => {
     if (!deepLinkSlug) return;
-    if (deepLinkSlug.startsWith("dm:")) {
+    if (parseDmSlug(deepLinkSlug)) {
       const c = dm.contacts.find((x) => x.dmSlug === deepLinkSlug);
       if (c) {
         setActive({ kind: "dm", partnerOwnerId: c.partnerOwnerId, partnerName: c.partnerName ?? "…", slug: c.dmSlug });
         markRead(c.dmSlug);
       }
-    } else if (deepLinkSlug.startsWith("event:")) {
+    } else if (parseEventSlug(deepLinkSlug)) {
       // Event chat — backend gates by RSVP status; we just trust the
       // slug came from a calendar row the user could see.
       setActive({ kind: "event", slug: deepLinkSlug, label: "Diskuse k akci" });

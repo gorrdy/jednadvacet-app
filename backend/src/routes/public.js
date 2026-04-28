@@ -17,6 +17,7 @@ import {
   EVENT_CHAT_ARCHIVE_DAYS,
   EVENT_CHAT_LOOKAHEAD_DAYS,
 } from "../../../shared/constants.js";
+import { dmSlugFor, parseDmSlug, parseEventSlug } from "../../../shared/slugs.js";
 import { getCommunities } from "../communities.js";
 import {
   ensureUserTier,
@@ -31,34 +32,6 @@ import {
 } from "../tier.js";
 
 const VALID_CHANNEL_SLUGS = new Set(["global", ...CITIES.map((c) => c.slug)]);
-
-// DM channel slug: `dm:<ownerA>:<ownerB>` with ownerA < ownerB (lex-sorted)
-// so either side derives the same deterministic slug.
-const DM_SLUG_RE = /^dm:([A-Za-z0-9_-]{16,64}):([A-Za-z0-9_-]{16,64})$/;
-
-function dmSlugFor(a, b) {
-  if (a === b) return null;
-  return a < b ? `dm:${a}:${b}` : `dm:${b}:${a}`;
-}
-
-function parseDmSlug(slug) {
-  const m = DM_SLUG_RE.exec(slug);
-  if (!m) return null;
-  const [, a, b] = m;
-  if (a >= b) return null;        // must be sorted
-  return { a, b };
-}
-
-// Per-event chat channel: `event:<id>`. Visible to anyone who RSVP'd
-// "going" or "maybe" on that event. Lets attendees coordinate ("vezmu
-// hardware wallet ukázku, kdo chce vidět?"). Locked to read-only one
-// week after the event ends to discourage zombie threads.
-const EVENT_SLUG_RE = /^event:([a-zA-Z0-9_-]+)$/;
-function parseEventSlug(slug) {
-  const m = EVENT_SLUG_RE.exec(slug);
-  if (!m) return null;
-  return { eventId: m[1] };
-}
 
 // Archive policy for per-event chats: 7 days after the event ends, the
 // thread becomes read-only — old conversations can still be browsed but
