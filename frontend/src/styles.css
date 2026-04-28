@@ -3315,25 +3315,14 @@ button.sidebar-group-head.clickable:hover {
   max-width: 100%;
 }
 
-/* Delete button on own messages — appears on hover */
-.chat-del {
-  position: absolute;
-  top: -2px;
-  right: 4px;
-  width: 22px;
-  height: 22px;
-  border-radius: 0.3rem;
-  border: 1px solid var(--hairline);
-  background: var(--bg-elev);
-  color: var(--ink-muted);
-  cursor: pointer;
-  display: none;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
+/* Own messages: long-press deletes. Suppress iOS callout / text-selection
+   so the hold doesn't pop the system menu and doesn't visually fight the
+   gesture. Reactions are still tap-only via the inline button. */
+.chat-bubble-mine {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
 }
-.chat-msg-row:hover .chat-del { display: inline-flex; }
-.chat-del:hover { color: var(--danger); border-color: var(--danger); }
 
 /* ─── Composer (Discord-style rounded pill) ─────────────────────── */
 .chat-composer {

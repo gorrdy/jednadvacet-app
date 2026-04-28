@@ -8,7 +8,6 @@ import { useChannelStream } from "../hooks/useChannelStream";
 import { formatRelative, formatTime } from "../lib/fmt";
 import { Avatar } from "../components/Avatar";
 import { LoadingSpinner } from "../components/LoadingSpinner";
-import { IconX } from "../components/Icons";
 import { UserProfileModal } from "../components/UserProfileModal";
 
 interface Props {
@@ -126,6 +125,27 @@ export const Thread: FC<Props> = ({ slug, label, onBack, onAuthorRequest }) => {
     setMessages((prev) => prev.filter((x) => x.id !== m.id));
   };
 
+  // Long-press to delete own messages (replaces the previous "X" hover button).
+  // 550 ms feels like a deliberate hold, not a tap. We watch pointerdown and
+  // cancel on up/leave/cancel — pointercancel fires on iOS when scrolling
+  // begins, so vertical scrolling through history won't trigger deletion.
+  const pressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const cancelPress = useCallback(() => {
+    if (pressTimerRef.current) {
+      clearTimeout(pressTimerRef.current);
+      pressTimerRef.current = null;
+    }
+  }, []);
+  const startPress = useCallback((m: ChannelMessage) => {
+    cancelPress();
+    pressTimerRef.current = setTimeout(() => {
+      pressTimerRef.current = null;
+      void removeOwn(m);
+    }, 550);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cancelPress]);
+  useEffect(() => () => cancelPress(), [cancelPress]);
+
   // Toggle a reaction. Optimistic — the SSE path doesn't broadcast
   // reaction events yet (followup), so we update local state in place
   // and let the next refresh reconcile if anything diverges.
@@ -231,13 +251,16 @@ export const Thread: FC<Props> = ({ slug, label, onBack, onAuthorRequest }) => {
                         )}
                         <span className="chat-msg-time" title={formatRelative(m.createdAt)}>{formatTime(m.createdAt)}</span>
                       </div>
-                      <div className="chat-bubble">
+                      <div
+                        className={`chat-bubble ${mine ? "chat-bubble-mine" : ""}`}
+                        onPointerDown={mine ? () => startPress(m) : undefined}
+                        onPointerUp={mine ? cancelPress : undefined}
+                        onPointerLeave={mine ? cancelPress : undefined}
+                        onPointerCancel={mine ? cancelPress : undefined}
+                        onContextMenu={mine ? (e) => e.preventDefault() : undefined}
+                        title={mine ? "Podržte pro smazání" : undefined}
+                      >
                         {m.body}
-                        {mine && (
-                          <button className="chat-del" onClick={() => removeOwn(m)} title="Smazat moji zprávu">
-                            <IconX style={{ width: 12, height: 12 }} />
-                          </button>
-                        )}
                         {ownerId && profile && (
                           <button
                             type="button"
@@ -256,13 +279,16 @@ export const Thread: FC<Props> = ({ slug, label, onBack, onAuthorRequest }) => {
                   <div className="chat-msg-row chat-msg-row-cont">
                     <span className="chat-msg-time-gutter" aria-hidden="true">{formatTime(m.createdAt)}</span>
                     <div className="chat-msg-body">
-                      <div className="chat-bubble">
+                      <div
+                        className={`chat-bubble ${mine ? "chat-bubble-mine" : ""}`}
+                        onPointerDown={mine ? () => startPress(m) : undefined}
+                        onPointerUp={mine ? cancelPress : undefined}
+                        onPointerLeave={mine ? cancelPress : undefined}
+                        onPointerCancel={mine ? cancelPress : undefined}
+                        onContextMenu={mine ? (e) => e.preventDefault() : undefined}
+                        title={mine ? "Podržte pro smazání" : undefined}
+                      >
                         {m.body}
-                        {mine && (
-                          <button className="chat-del" onClick={() => removeOwn(m)} title="Smazat moji zprávu">
-                            <IconX style={{ width: 12, height: 12 }} />
-                          </button>
-                        )}
                         {ownerId && profile && (
                           <button
                             type="button"
