@@ -34,6 +34,7 @@ import { mountAdminRoutes } from "./src/routes/admin.js";
 import { mountSuperadminRoutes } from "./src/routes/superadmin.js";
 import { mountLnurlRoutes, startLnurlPoller } from "./src/routes/lnurl.js";
 import { mountMarketplaceRoutes } from "./src/routes/marketplace.js";
+import { mountTierPublicRoutes } from "./src/routes/tier-public.js";
 
 if (VAPID_PUBLIC && VAPID_PRIVATE) {
   webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC, VAPID_PRIVATE);
@@ -70,6 +71,7 @@ app.get("/api/health", (_req, res) => {
 });
 
 mountPublicRoutes(app);
+mountTierPublicRoutes(app);
 mountAdminRoutes(app);
 mountSuperadminRoutes(app);
 mountLnurlRoutes(app);
