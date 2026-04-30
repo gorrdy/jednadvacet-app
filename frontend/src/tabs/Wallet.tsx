@@ -17,7 +17,13 @@ import { TxDetailView } from "../wallet/TxDetail";
 import type { WalletView } from "../wallet/shared";
 import { scrollContentTop } from "../lib/scroll";
 
-const PERIODIC_INTERVAL_MS = 2 * 60 * 60 * 1000; // every 2 h while wallet tab is open
+// Pending mint/melt/send checks are cheap (each early-returns when there
+// is nothing pending) — poll fast so a redeemed Cashu token or a settled
+// LN invoice flips status within a minute while the user is staring at
+// the wallet tab. Proof state verification iterates all active proofs
+// against the mint, so it runs slower.
+const FAST_INTERVAL_MS = 60_000;          // pending tx reconciliation
+const SLOW_INTERVAL_MS = 5 * 60 * 1000;   // proof state audits
 
 export const WalletTab: FC = () => {
   const owner = use(evolu.appOwner);
@@ -35,16 +41,32 @@ export const WalletTab: FC = () => {
   cashuRef.current = cashu;
 
   useEffect(() => {
-    const run = () => {
+    const fastRun = () => {
       const c = cashuRef.current;
       void c.reconcilePendingTxs();    // mint/melt quote-state catch-up
-      void c.recoverProofs();          // bring back stale-spent proofs (legacy bug recovery)
-      void c.verifyActiveProofs();     // drop active proofs the mint says are SPENT
       void c.reconcileSendTxs();       // claim / auto-reclaim pending send tokens
     };
-    run(); // immediate pass on mount
-    const id = window.setInterval(run, PERIODIC_INTERVAL_MS);
-    return () => window.clearInterval(id);
+    const slowRun = () => {
+      const c = cashuRef.current;
+      void c.recoverProofs();          // bring back stale-spent proofs (legacy bug recovery)
+      void c.verifyActiveProofs();     // drop active proofs the mint says are SPENT
+    };
+    fastRun();                          // immediate pass on mount
+    slowRun();
+    const fastId = window.setInterval(fastRun, FAST_INTERVAL_MS);
+    const slowId = window.setInterval(slowRun, SLOW_INTERVAL_MS);
+    // Re-poll the fast lane the moment the user comes back to the tab
+    // (returning from another app, switching tabs back) — they're now
+    // staring at potentially stale "čeká na claim" / "čeká" badges.
+    const onVis = () => {
+      if (document.visibilityState === "visible") fastRun();
+    };
+    document.addEventListener("visibilitychange", onVis);
+    return () => {
+      window.clearInterval(fastId);
+      window.clearInterval(slowId);
+      document.removeEventListener("visibilitychange", onVis);
+    };
   }, []);
 
   // Any inner-view navigation (Receive → Home after paid, Send → Home, etc.)

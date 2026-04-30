@@ -18,7 +18,7 @@ export const WalletHome: FC<{ setView: (v: WalletView) => void }> = ({ setView }
   const showBackupNag = cashu.balances.total >= BACKUP_NAG_THRESHOLD_SATS && !prefs.seedBackedUp;
 
   return (
-    <div>
+    <div className="wallet-page">
       {showBackupNag && (
         <div className="wallet-backup-nag" role="alert">
           <strong>⚠ Záloha fráze chybí.</strong>{" "}

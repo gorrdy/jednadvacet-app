@@ -2412,10 +2412,19 @@ button.sidebar-group-head.clickable:hover {
 }
 
 /* ─── Wallet (Macadamia-like) ──────────────────────────────── */
+.wallet-page {
+  /* Bleed up into the .content padding-top (1.25rem) and to the page
+     edges (.content has 1.1rem horizontal padding) so the orange-tinted
+     hero gradient covers the space between the topbar and the balance
+     instead of leaving a black band there. The negative top is offset
+     by an equal padding-top so visible content stays put. */
+  margin: -1.25rem -1.1rem 0;
+  padding: 1.25rem 1.1rem 0;
+  background: radial-gradient(ellipse 90% 360px at 50% 0%, rgba(247, 147, 26, 0.18), transparent 70%);
+}
 .wallet-hero {
   padding: 0.8rem 1.2rem 2rem;
   margin: 0 -1rem 0.5rem;
-  background: radial-gradient(ellipse 80% 80% at 50% 0%, rgba(247, 147, 26, 0.18), transparent 70%);
   text-align: center;
 }
 .wallet-hero-label {
