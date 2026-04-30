@@ -47,13 +47,28 @@ export function useVersion() {
     };
   }, []);
 
-  const reload = () => {
-    if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.getRegistration().then((reg) => {
-        if (reg) reg.update().catch(() => {});
-      });
+  // Update flow used to call reg.update() async then immediately reload —
+  // the reload fired before the new SW reached activate, so the old SW
+  // kept serving while the new index.html referenced not-yet-cached
+  // chunks. Result: black screen until the user kill-restarted the app.
+  //
+  // Now: unregister the SW + nuke all Cache Storage entries first, then
+  // reload. With no SW intercepting fetches, the reload pulls everything
+  // fresh from network; main.tsx re-registers the SW on the next load —
+  // same effect as a kill-restart.
+  const reload = async () => {
+    try {
+      if ("serviceWorker" in navigator) {
+        const reg = await navigator.serviceWorker.getRegistration();
+        if (reg) await reg.unregister();
+      }
+      if ("caches" in window) {
+        const keys = await caches.keys();
+        await Promise.all(keys.map((k) => caches.delete(k)));
+      }
+    } catch {
+      /* best-effort — fall through to plain reload */
     }
-    // Hard reload to bust caches.
     window.location.reload();
   };
 
