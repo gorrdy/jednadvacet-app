@@ -3304,6 +3304,13 @@ button.sidebar-group-head.clickable:hover {
   word-break: break-word;
   max-width: 100%;
 }
+/* Reserve room on the right for the absolute-positioned action cluster
+   (🙂 + ⋯, ~56px wide) so text never wraps under the buttons. Only
+   applied when actions actually render (so messages without any
+   actions — e.g. system rows — don't lose horizontal space). */
+.chat-bubble:has(.chat-msg-actions) {
+  padding-right: 64px;
+}
 
 /* Per-message action cluster anchored to the bubble's top-right.
    Two parallel handles, sized identically so the row reads as one unit:
