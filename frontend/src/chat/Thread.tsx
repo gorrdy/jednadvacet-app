@@ -248,46 +248,43 @@ export const Thread: FC<Props> = ({ slug, label, onBack, onAuthorRequest }) => {
       );
     }
     const canReact = !!ownerId && !!profile;
-    const showActions = canReact || mine;
     return (
-      <div className="chat-bubble">
+      <div
+        className="chat-bubble"
+        // Long-press (touch) and right-click (mouse) both fire contextmenu.
+        // Suppress the native menu and open our reaction picker instead, but
+        // only when the gesture starts on the bubble body — not on the ⋯
+        // overflow button or its menu items, where the user means
+        // Edit/Delete, not React.
+        onContextMenu={(e) => {
+          if (!canReact) return;
+          if ((e.target as HTMLElement).closest(".chat-msg-actions")) return;
+          e.preventDefault();
+          setPickingFor((p) => p === m.id ? null : m.id);
+        }}
+      >
         {m.body}
         {m.editedAt && <span className="chat-edited-tag" title={`Upraveno ${formatRelative(m.editedAt)}`}>(upraveno)</span>}
-        {showActions && (
+        {mine && (
           <div className="chat-msg-actions" onClick={(e) => e.stopPropagation()}>
-            {canReact && (
-              <button
-                type="button"
-                className="chat-msg-react-btn"
-                onClick={() => setPickingFor((p) => p === m.id ? null : m.id)}
-                aria-label="Přidat reakci"
-                title="Reagovat"
-              >
-                🙂
-              </button>
-            )}
-            {mine && (
-              <>
-                <button
-                  type="button"
-                  className="chat-msg-menu-btn"
-                  onClick={() => setMenuFor((id) => id === m.id ? null : m.id)}
-                  aria-label="Možnosti zprávy"
-                  title="Možnosti"
-                >
-                  ⋯
+            <button
+              type="button"
+              className="chat-msg-menu-btn"
+              onClick={() => setMenuFor((id) => id === m.id ? null : m.id)}
+              aria-label="Možnosti zprávy"
+              title="Možnosti"
+            >
+              ⋯
+            </button>
+            {menuFor === m.id && (
+              <div className="chat-msg-menu" role="menu">
+                <button type="button" role="menuitem" className="chat-msg-menu-item" onClick={() => beginEdit(m)}>
+                  Upravit
                 </button>
-                {menuFor === m.id && (
-                  <div className="chat-msg-menu" role="menu">
-                    <button type="button" role="menuitem" className="chat-msg-menu-item" onClick={() => beginEdit(m)}>
-                      Upravit
-                    </button>
-                    <button type="button" role="menuitem" className="chat-msg-menu-item danger" onClick={() => { setMenuFor(null); void removeOwn(m); }}>
-                      Smazat
-                    </button>
-                  </div>
-                )}
-              </>
+                <button type="button" role="menuitem" className="chat-msg-menu-item danger" onClick={() => { setMenuFor(null); void removeOwn(m); }}>
+                  Smazat
+                </button>
+              </div>
             )}
           </div>
         )}

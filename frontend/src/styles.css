@@ -3303,13 +3303,17 @@ button.sidebar-group-head.clickable:hover {
   white-space: pre-wrap;
   word-break: break-word;
   max-width: 100%;
+  /* Suppress the iOS Safari long-press callout (Copy / Look Up / Share).
+     We hijack contextmenu (long-press on touch, right-click on desktop)
+     to open our own reaction picker — leaving the native callout would
+     create a double menu. */
+  -webkit-touch-callout: none;
 }
-/* Reserve room on the right for the absolute-positioned action cluster
-   (🙂 + ⋯, ~56px wide) so text never wraps under the buttons. Only
-   applied when actions actually render (so messages without any
-   actions — e.g. system rows — don't lose horizontal space). */
+/* Reserve room for the absolute-positioned ⋯ overflow button (~26px)
+   only on bubbles that actually render it (own messages). Others'
+   bubbles get full text width. */
 .chat-bubble:has(.chat-msg-actions) {
-  padding-right: 64px;
+  padding-right: 36px;
 }
 
 /* Per-message action cluster anchored to the bubble's top-right.
@@ -3327,7 +3331,6 @@ button.sidebar-group-head.clickable:hover {
   align-items: flex-start;
   gap: 4px;
 }
-.chat-msg-react-btn,
 .chat-msg-menu-btn {
   width: 26px;
   height: 26px;
@@ -3340,22 +3343,16 @@ button.sidebar-group-head.clickable:hover {
   align-items: center;
   justify-content: center;
   padding: 0;
-  font-size: 0.95rem;
+  font-size: 1rem;
   line-height: 1;
   opacity: 0;
   transition: opacity 0.12s, color 0.12s, border-color 0.12s;
 }
-.chat-msg-menu-btn { font-size: 1rem; }
-.chat-msg-row:hover .chat-msg-react-btn,
 .chat-msg-row:hover .chat-msg-menu-btn,
-.chat-msg-react-btn:focus-visible,
 .chat-msg-menu-btn:focus-visible { opacity: 1; }
-.chat-msg-react-btn:hover,
 .chat-msg-menu-btn:hover { color: var(--ink); border-color: var(--ink-muted); }
 @media (hover: none) {
-  /* No hover on touch — keep the buttons visible but tame so they don't
-     compete with message body. */
-  .chat-msg-react-btn,
+  /* No hover on touch — keep the button faintly visible. */
   .chat-msg-menu-btn { opacity: 0.55; }
 }
 
