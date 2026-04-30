@@ -22,11 +22,13 @@
   --ink-muted:    #8f8578;
   --ink-faint:    #5e564c;
 
-  /* Accent — ember amber. Warmer & less saturated than default btc orange. */
-  --ember:        #ff8a2a;
-  --ember-soft:   rgba(255, 138, 42, 0.14);
-  --ember-hot:    #ffae5c;
-  --ember-deep:   #b35b11;
+  /* Accent — canonical Bitcoin orange #f7931a, the same shade used in the
+     Jednadvacet brand wordmark and across the twentyone.world / Einundzwanzig
+     family. Warm enough to keep the cosy dark voice; on-brand at a glance. */
+  --ember:        #f7931a;
+  --ember-soft:   rgba(247, 147, 26, 0.14);
+  --ember-hot:    #ffa83a;
+  --ember-deep:   #b86d0e;
 
   /* Secondary accent — brass/gold for "going" state & confirmations. */
   --brass:        #d9a441;
@@ -41,13 +43,25 @@
   --r:            10px;
   --r-lg:         14px;
 
+  /* Spacing scale — foundation for future layout work. Existing CSS still
+     uses ad-hoc rem values; new code should prefer these tokens. */
+  --space-1:      0.25rem;
+  --space-2:      0.5rem;
+  --space-3:      0.75rem;
+  --space-4:      1rem;
+  --space-6:      1.5rem;
+  --space-8:      2rem;
+
   /* Type */
   --sans:         "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI",
                   Roboto, system-ui, sans-serif;
   --mono:         "JetBrains Mono", "SF Mono", ui-monospace, Menlo,
                   Consolas, monospace;
-  /* Display alias = sans with heavier weight + tighter tracking. */
+  /* Display = Inter at heavy weight. Aliased so future swaps to a dedicated
+     display face (e.g. The Bold Font once Czech-diacritic coverage exists)
+     are a one-line change. */
   --display:      var(--sans);
+  --display-weight: 900;
 }
 
 * { box-sizing: border-box; }
@@ -93,7 +107,7 @@ body {
   overflow-x: hidden;
   /* Subtle vignette so edges recede and focus pulls centre. */
   background:
-    radial-gradient(ellipse 80% 50% at 50% 0%, rgba(255, 138, 42, 0.05), transparent 60%),
+    radial-gradient(ellipse 80% 50% at 50% 0%, rgba(247, 147, 26, 0.05), transparent 60%),
     var(--bg);
 }
 
@@ -580,7 +594,7 @@ input::placeholder, textarea::placeholder { color: var(--ink-faint); }
 .tier-badge.tier-2 { color: var(--ink-muted); }
 .tier-badge.tier-3 { color: var(--ok); }
 .tier-badge.tier-4 { color: var(--ember); }
-.tier-badge.tier-5 { color: var(--ember-hot); background: rgba(255,138,42,0.12); }
+.tier-badge.tier-5 { color: var(--ember-hot); background: rgba(247,147,26,0.12); }
 
 /* ─── Article reader (full-screen detail) ───────────────────── */
 .article-reader { padding-top: 0.5rem; padding-bottom: 4rem; }
@@ -866,7 +880,7 @@ input::placeholder, textarea::placeholder { color: var(--ink-faint); }
   padding-top: calc(1.5rem + env(safe-area-inset-top));
   padding-bottom: calc(1.5rem + env(safe-area-inset-bottom));
   background:
-    radial-gradient(ellipse 60% 40% at 50% 20%, rgba(255, 138, 42, 0.08), transparent 70%),
+    radial-gradient(ellipse 60% 40% at 50% 20%, rgba(247, 147, 26, 0.08), transparent 70%),
     var(--bg);
 }
 .welcome-card {
@@ -1042,11 +1056,11 @@ input::placeholder, textarea::placeholder { color: var(--ink-faint); }
 }
 .home-hero .greeting {
   font-family: var(--display);
-  font-size: 2rem;
-  font-weight: 800;
-  letter-spacing: -0.03em;
+  font-size: 2.15rem;
+  font-weight: var(--display-weight);
+  letter-spacing: -0.035em;
   margin: 0;
-  line-height: 1.15;
+  line-height: 1.1;
 }
 .home-hero .greeting span { color: var(--ember); }
 .home-hero .subline {
@@ -1222,7 +1236,7 @@ input::placeholder, textarea::placeholder { color: var(--ink-faint); }
   border-radius: 0.7rem;
   padding: 0.9rem 1rem;
   margin-bottom: 1rem;
-  background: linear-gradient(180deg, rgba(255, 138, 42, 0.06), transparent 120%);
+  background: linear-gradient(180deg, rgba(247, 147, 26, 0.06), transparent 120%);
 }
 .onboarding-head {
   display: flex;
@@ -1403,7 +1417,7 @@ input::placeholder, textarea::placeholder { color: var(--ink-faint); }
   cursor: pointer;
   color: var(--ink);
 }
-.directory-section-head:hover { background: rgba(255, 138, 42, 0.03); }
+.directory-section-head:hover { background: rgba(247, 147, 26, 0.03); }
 .directory-section-head-text { flex: 1; min-width: 0; }
 .directory-section-title {
   font-family: var(--display);
@@ -2312,7 +2326,7 @@ button.sidebar-group-head.clickable:hover {
   border: 1px solid var(--hairline);
   border-radius: 0.7rem;
   padding: 0.9rem 1rem;
-  background: linear-gradient(180deg, rgba(255, 138, 42, 0.06), transparent 120%);
+  background: linear-gradient(180deg, rgba(247, 147, 26, 0.06), transparent 120%);
   margin-bottom: 1rem;
 }
 .nearest-head {
@@ -2427,7 +2441,7 @@ button.sidebar-group-head.clickable:hover {
 .wallet-hero {
   padding: 0.8rem 1.2rem 2rem;
   margin: 0 -1rem 0.5rem;
-  background: radial-gradient(ellipse 80% 80% at 50% 0%, rgba(255, 138, 42, 0.18), transparent 70%);
+  background: radial-gradient(ellipse 80% 80% at 50% 0%, rgba(247, 147, 26, 0.18), transparent 70%);
   text-align: center;
 }
 .wallet-hero-label {
