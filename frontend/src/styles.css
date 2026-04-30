@@ -3275,13 +3275,9 @@ button.sidebar-group-head.clickable:hover {
 }
 
 /* Continuation rows: no avatar, hover-revealed timestamp in the gutter
- * matches Discord's compact same-author stacking. */
-.chat-msg-row-cont {
-  padding-left: 0.5rem;
-}
-.chat-msg-row-cont .chat-msg-body {
-  margin-left: calc(38px + 0.7rem);
-}
+ * matches Discord's compact same-author stacking. The gutter occupies
+ * the same 38px footprint the avatar would, so the bubble lines up
+ * vertically with the head row's bubble — no extra body margin needed. */
 .chat-msg-time-gutter {
   width: 38px;
   flex-shrink: 0;
@@ -3292,7 +3288,6 @@ button.sidebar-group-head.clickable:hover {
   align-self: center;
   letter-spacing: 0.02em;
   padding-top: 0.2rem;
-  margin-left: -0.5rem;
 }
 .chat-msg-row-cont:hover .chat-msg-time-gutter {
   color: var(--ink-faint);
