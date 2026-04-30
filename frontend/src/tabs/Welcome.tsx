@@ -7,8 +7,11 @@ interface Props {
 export const Welcome: FC<Props> = ({ onContinue }) => (
   <div className="welcome">
     <div className="welcome-card">
-      <div className="welcome-mark">21</div>
-      <h1>Jednadvacet</h1>
+      <img
+        className="welcome-logo"
+        src="/brand/jednadvacet-jeden-radek-bila-nbg.svg"
+        alt="Jednadvacet"
+      />
       <p className="tagline">
         Komunita ve tvé kapse.<br />
         Články, meetupy, lidé.

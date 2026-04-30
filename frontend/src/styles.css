@@ -889,39 +889,12 @@ input::placeholder, textarea::placeholder { color: var(--ink-faint); }
   width: 100%;
   text-align: center;
 }
-.welcome-mark {
-  font-family: var(--display);
-  font-size: 5rem;
-  font-weight: 800;
-  line-height: 1;
-  letter-spacing: -0.06em;
-  margin: 0 0 0.2rem;
-  background: linear-gradient(180deg, var(--ink) 0%, var(--ember) 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  position: relative;
-  display: inline-block;
-  font-feature-settings: "ss01", "tnum";
-}
-.welcome-mark::after {
-  content: "²¹";
-  font-family: var(--mono);
-  font-size: 0.28em;
-  color: var(--ember);
-  vertical-align: top;
-  position: absolute;
-  right: -1.1em;
-  top: 0.1em;
-  background: none;
-  -webkit-text-fill-color: var(--ember);
-}
-.welcome h1 {
-  font-family: var(--display);
-  font-size: 2rem;
-  font-weight: 700;
-  margin: 0.6rem 0 0.5rem;
-  letter-spacing: -0.03em;
+.welcome-logo {
+  display: block;
+  width: 100%;
+  max-width: 360px;
+  height: auto;
+  margin: 0 auto 1.4rem;
 }
 .welcome .tagline {
   color: var(--ink-muted);

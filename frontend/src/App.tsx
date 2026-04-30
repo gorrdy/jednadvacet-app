@@ -329,9 +329,6 @@ const AppShell: FC = () => {
             <span className="online-dot" aria-hidden="true" /> {onlineCount}
           </span>
         )}
-        <span className={`status ${import.meta.env.VITE_EVOLU_INSTANCE === "jednadvacet-test" ? "staging" : ""}`}>
-          {import.meta.env.VITE_EVOLU_INSTANCE === "jednadvacet-test" ? "STAGING" : "LOCAL · E2E"}
-        </span>
         <button
           className={`topbar-gear ${tab === "profile" ? "active" : ""}`}
           onClick={() => setTab("profile")}
