@@ -219,7 +219,6 @@ export const Messages: FC<Props> = ({ deepLinkSlug, onDeepLinkConsumed }) => {
     void sendDmRequest(m[1]);
   };
 
-  const needsProfile = !profile;
   if (!selfOwnerId) return <div className="loading">Načítám…</div>;
 
   // Mobile drawer gestures:
@@ -340,15 +339,6 @@ export const Messages: FC<Props> = ({ deepLinkSlug, onDeepLinkConsumed }) => {
         onTouchStart={onMainTouchStart}
         onTouchEnd={onMainTouchEnd}
       >
-        {needsProfile && (
-          <div className="card" style={{ background: "var(--ember-soft)", borderColor: "var(--ember-deep)" }}>
-            <p className="hint" style={{ color: "var(--ink)", margin: 0 }}>
-              <strong>Před psaním si nastav přezdívku.</strong> Otevři{" "}
-              <span className="kbd">Nastavení → Profil</span>.
-            </p>
-          </div>
-        )}
-
         {/* Chat tab is never empty — Messages mounts with active = #global by
          * default, so one of the Thread / Requests branches always renders. */}
         {active?.kind === "channel" && (

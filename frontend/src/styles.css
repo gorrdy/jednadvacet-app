@@ -3199,6 +3199,13 @@ button.sidebar-group-head.clickable:hover {
 .chat-thread-back:hover { background: var(--surface); border-color: var(--hairline-2); }
 .chat-thread-back:active { transform: scale(0.95); }
 
+.chat-nickname-prompt {
+  background: var(--ember-soft);
+  border-color: var(--ember-deep);
+  padding: 0.85rem 1rem;
+  margin: 0 0.6rem 0.8rem;
+}
+
 .chat-list {
   flex: 1;
   overflow-y: auto;

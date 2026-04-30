@@ -306,17 +306,16 @@ export const Thread: FC<Props> = ({ slug, label, onBack, onAuthorRequest }) => {
         <div />
       </div>
 
-      {needsNickname && (
-        <div className="card" style={{ padding: "0.85rem 1rem", marginBottom: "0.6rem", background: "var(--ember-soft)", borderColor: "var(--ember-deep)" }}>
-          <p className="hint" style={{ color: "var(--ink)", margin: 0 }}>
-            <strong>Před psaním si zvol přezdívku.</strong> Otevři{" "}
-            <span className="kbd">Nastavení → Profil</span>{" "}
-            a zadej jméno — objeví se stejné na všech tvých zařízeních.
-          </p>
-        </div>
-      )}
-
       <div className="chat-list" ref={listRef}>
+        {needsNickname && (
+          <div className="card chat-nickname-prompt">
+            <p className="hint" style={{ color: "var(--ink)", margin: 0 }}>
+              <strong>Před psaním si zvol přezdívku.</strong> Otevři{" "}
+              <span className="kbd">Nastavení → Profil</span>{" "}
+              a zadej jméno — objeví se stejné na všech tvých zařízeních.
+            </p>
+          </div>
+        )}
         {loading ? (
           <LoadingSpinner label="Načítám zprávy…" />
         ) : messages.length === 0 ? (
