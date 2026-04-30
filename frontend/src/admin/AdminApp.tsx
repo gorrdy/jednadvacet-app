@@ -90,8 +90,11 @@ const AdminShell: FC<{ session: Session; signOut: () => void }> = ({ session, si
     <div className="admin-shell">
       <div className="admin-top">
         <div className="brand">
-          <span>Jednadvacet</span>
-          <span className="sigil">21</span>
+          <img
+            src="/brand/jednadvacet-jeden-radek-bila-nbg.svg"
+            alt="Jednadvacet"
+            className="brand-logo"
+          />
         </div>
         <div className="who">
           <span className="role-chip">{session.admin.role}</span>

@@ -191,25 +191,22 @@ input::placeholder, textarea::placeholder { color: var(--ink-faint); }
 }
 
 .topbar .brand {
-  display: flex; align-items: baseline; gap: 0.45rem;
-  font-family: var(--display);
-  font-weight: 700;
-  font-size: 1.2rem;
-  letter-spacing: -0.01em;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-width: 0;
 }
-.topbar .brand .sigil {
-  font-family: var(--mono);
-  font-size: 0.82rem;
-  font-weight: 600;
-  color: var(--ember);
-  letter-spacing: 0.02em;
-  padding: 0.1rem 0.45rem;
-  border: 1px solid var(--ember);
-  border-radius: 4px;
-  line-height: 1;
-  position: relative;
-  top: -2px;
+.topbar .brand .brand-logo {
+  height: 22px;
+  width: auto;
+  display: block;
+  flex-shrink: 0;
+  /* The official wordmark already has the correct contrast on dark surfaces;
+     subtle dim on press to give an interactive feedback when the brand
+     becomes a tap target later. */
+  transition: opacity 0.15s;
 }
+.topbar .brand:active .brand-logo { opacity: 0.7; }
 .topbar .spacer { flex: 1; }
 .topbar .status {
   font-family: var(--mono);
@@ -2845,20 +2842,11 @@ button.sidebar-group-head.clickable:hover {
   display: flex;
   align-items: center;
   gap: 0.55rem;
-  font-family: var(--display);
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  font-size: 1.25rem;
 }
-.admin-top .brand .sigil {
-  font-family: var(--mono);
-  color: var(--ember);
-  font-weight: 700;
-  border: 1px solid var(--ember);
-  padding: 0.1rem 0.35rem;
-  border-radius: 0.35rem;
-  font-size: 0.85rem;
-  line-height: 1;
+.admin-top .brand .brand-logo {
+  height: 24px;
+  width: auto;
+  display: block;
 }
 .admin-top .who {
   margin-left: auto;

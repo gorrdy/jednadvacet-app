@@ -317,8 +317,11 @@ const AppShell: FC = () => {
 
       <header className="topbar">
         <div className="brand">
-          <span>Jednadvacet</span>
-          <span className="sigil">21</span>
+          <img
+            src="/brand/jednadvacet-jeden-radek-bila-nbg.svg"
+            alt="Jednadvacet"
+            className="brand-logo"
+          />
         </div>
         <div className="spacer" />
         {onlineCount !== null && onlineCount > 0 && (
