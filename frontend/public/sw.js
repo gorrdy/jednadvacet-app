@@ -1,8 +1,8 @@
 // Jednadvacet service worker — push notifications + basic offline shell.
 // Kept small on purpose: Evolu handles data persistence for logged-in users.
 
-const CACHE = "jednadvacet-shell-v3";
-const SHELL = ["/", "/index.html", "/manifest.webmanifest", "/icon.svg"];
+const CACHE = "jednadvacet-shell-v4";
+const SHELL = ["/", "/index.html", "/manifest.webmanifest", "/icon-512.png", "/favicon.png"];
 
 self.addEventListener("install", (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).catch(() => {}));
@@ -79,8 +79,8 @@ self.addEventListener("push", (event) => {
 
   const options = {
     body: data.body || "",
-    icon: "/icon.svg",
-    badge: "/icon.svg",
+    icon: "/icon-512.png",
+    badge: "/favicon.png",
     data: { url: data.url || "/" },
     tag,
     renotify: true,
