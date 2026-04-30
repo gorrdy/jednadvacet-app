@@ -65,22 +65,35 @@ export function mountEventRoutes(app) {
     }
     const ev = db.prepare("SELECT id FROM events WHERE id = ?").get(eventId);
     if (!ev) return res.status(404).json({ error: "unknown event" });
+    // event_rsvp PRIMARY KEY is (token, event_id), so a user RSVP'ing
+    // from N devices (or after re-installing N times) has N rows per
+    // event — without GROUP BY the JOIN repeats the same owner once per
+    // device. Group by owner_id to dedupe to one entry per person.
     const named = db.prepare(`
       SELECT u.owner_id, u.display_name, u.avatar, COALESCE(t.tier, 1) AS tier
       FROM event_rsvp r
       JOIN chat_user u ON u.owner_id = r.owner_id
       LEFT JOIN user_tier t ON t.owner_id = u.owner_id
       WHERE r.event_id = ? AND r.status = 'going' AND r.owner_id IS NOT NULL
+      GROUP BY u.owner_id
       ORDER BY t.tier DESC, u.display_name ASC
     `).all(eventId);
     const anonRow = db.prepare(`
       SELECT COUNT(*) AS c FROM event_rsvp
       WHERE event_id = ? AND status = 'going' AND owner_id IS NULL
     `).get(eventId);
-    const maybeRow = db.prepare(`
-      SELECT COUNT(*) AS c FROM event_rsvp
-      WHERE event_id = ? AND status = 'maybe'
+    // Same dedup logic for the "maybe" tally — distinct owners for
+    // named, raw token count for anonymous (each anon token = one
+    // person we can't otherwise distinguish).
+    const maybeNamedRow = db.prepare(`
+      SELECT COUNT(DISTINCT owner_id) AS c FROM event_rsvp
+      WHERE event_id = ? AND status = 'maybe' AND owner_id IS NOT NULL
     `).get(eventId);
+    const maybeAnonRow = db.prepare(`
+      SELECT COUNT(*) AS c FROM event_rsvp
+      WHERE event_id = ? AND status = 'maybe' AND owner_id IS NULL
+    `).get(eventId);
+    const maybeTotal = (maybeNamedRow?.c ?? 0) + (maybeAnonRow?.c ?? 0);
     res.json({
       named: named.map((r) => ({
         ownerId: r.owner_id,
@@ -89,7 +102,7 @@ export function mountEventRoutes(app) {
         tier: r.tier ?? 1,
       })),
       anonCount: anonRow?.c ?? 0,
-      maybeCount: maybeRow?.c ?? 0,
+      maybeCount: maybeTotal,
       total: named.length + (anonRow?.c ?? 0),
     });
   });

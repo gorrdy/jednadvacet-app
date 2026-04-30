@@ -29,10 +29,16 @@ export function mountPublicRoutes(app) {
   // Public list with a live "going" count joined in. Cheap correlated
   // subquery; SQLite indexes on event_rsvp(event_id, status) handle it.
   // The RSVP write/delete + attendees endpoints live in routes/events.js.
+  //
+  // event_rsvp PRIMARY KEY is (token, event_id), so a person RSVP'ing
+  // from N devices has N rows. Dedup with COUNT(DISTINCT COALESCE(
+  // owner_id, token)): named users collapse to one (same owner_id on
+  // all their devices), anon tokens stay distinct (no owner to merge on).
   app.get("/api/events", (_req, res) => {
     const rows = db.prepare(`
       SELECT e.*,
-        (SELECT COUNT(*) FROM event_rsvp r WHERE r.event_id = e.id AND r.status = 'going') AS going_count
+        (SELECT COUNT(DISTINCT COALESCE(r.owner_id, r.token)) FROM event_rsvp r
+           WHERE r.event_id = e.id AND r.status = 'going') AS going_count
       FROM events e
       ORDER BY e.starts_at ASC
     `).all();
