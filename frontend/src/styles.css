@@ -284,14 +284,18 @@ input::placeholder, textarea::placeholder { color: var(--ink-faint); }
 }
 .tabs-bottom button svg { width: 20px; height: 20px; stroke-width: 1.4; stroke: currentColor; fill: none; transition: stroke-width 0.15s; }
 .tabs-bottom button.active { color: var(--ember); }
-.tabs-bottom button.active svg { stroke-width: 1.8; }
+.tabs-bottom button.active svg { stroke-width: 1.9; }
 .tabs-bottom button.active::before {
   content: "";
   position: absolute;
   top: 0; left: 50%; transform: translateX(-50%);
-  width: 18px; height: 2px;
+  width: 26px; height: 2.5px;
   background: var(--ember);
   border-radius: 0 0 2px 2px;
+}
+@media (hover: hover) {
+  .tabs-bottom button:not(.active):hover { color: var(--ink-dim); }
+  .tabs-bottom button:not(.active):hover svg { stroke-width: 1.6; }
 }
 
 /* ─── Cards & sections ──────────────────────────────────────── */
